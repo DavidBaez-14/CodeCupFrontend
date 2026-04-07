@@ -1,0 +1,62 @@
+import { Navigate, Route, Routes } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute';
+import ArbitroDashboard from './pages/ArbitroDashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import ChangePasswordPage from './pages/ChangePasswordPage';
+import DelegadoDashboard from './pages/DelegadoDashboard';
+import GoogleCallbackPage from './pages/GoogleCallbackPage';
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import './styles/app-shell.css';
+
+function App() {
+  return (
+    <div className="app-shell">
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
+
+        <Route
+          path="/cambiar-contrasena"
+          element={(
+            <ProtectedRoute>
+              <ChangePasswordPage />
+            </ProtectedRoute>
+          )}
+        />
+
+        <Route
+          path="/dashboard/admin"
+          element={(
+            <ProtectedRoute allowedRoles={['ADMINISTRADOR']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          )}
+        />
+
+        <Route
+          path="/dashboard/arbitro"
+          element={(
+            <ProtectedRoute allowedRoles={['ARBITRO']}>
+              <ArbitroDashboard />
+            </ProtectedRoute>
+          )}
+        />
+
+        <Route
+          path="/dashboard/delegado"
+          element={(
+            <ProtectedRoute allowedRoles={['DELEGADO']}>
+              <DelegadoDashboard />
+            </ProtectedRoute>
+          )}
+        />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
+  );
+}
+
+export default App;

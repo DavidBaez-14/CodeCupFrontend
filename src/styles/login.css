@@ -1,0 +1,147 @@
+.login-page {
+  display: grid;
+  place-items: center;
+}
+
+.auth-card {
+  width: min(480px, 100%);
+  border-radius: 12px;
+  border: 1px solid #2a2a2a;
+  background: #1a1a1a;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  padding: 1.4rem;
+}
+
+.auth-brand {
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.08em;
+  color: #f97316;
+  font-size: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.auth-card h1 {
+  font-size: 2.2rem;
+}
+
+.auth-subtitle {
+  margin-top: 0.2rem;
+  color: #a1a1aa;
+}
+
+.role-tabs {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.role-tab {
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  background: #2a2a2a;
+  color: #a1a1aa;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.55rem 0.4rem;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+
+.role-tab.active {
+  background: linear-gradient(130deg, #f97316, #ef4444);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.auth-form {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.auth-form label {
+  color: #d4d4d8;
+  font-size: 0.88rem;
+}
+
+.auth-form input {
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  background: #101010;
+  color: #ffffff;
+  padding: 0.72rem 0.75rem;
+}
+
+.auth-form input:focus {
+  outline: none;
+  border-color: #f97316;
+}
+
+.separator {
+  text-align: center;
+  margin: 1rem 0;
+  color: #a1a1aa;
+}
+
+.google-button {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.google-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.success-text {
+  color: #9ef0a3;
+  margin-top: 0.75rem;
+  font-size: 0.92rem;
+}
+
+.recovery-box {
+  margin-top: 1rem;
+  padding: 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #2a2a2a;
+  background: #141414;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.recovery-box h2 {
+  font-size: 1.1rem;
+}
+
+.recovery-box p {
+  color: #a1a1aa;
+  font-size: 0.88rem;
+}
+
+.recovery-button {
+  border: 1px solid #3a3a3a;
+  background: linear-gradient(145deg, rgba(249, 115, 22, 0.2), rgba(239, 68, 68, 0.2));
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.62rem 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.recovery-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.oauth-note {
+  margin-top: 0.2rem;
+  color: #a1a1aa;
+  font-size: 0.84rem;
+}
