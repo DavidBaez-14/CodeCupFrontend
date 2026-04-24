@@ -1,0 +1,172 @@
+/* ============================================================
+   CODE CUP — Design Tokens
+   Universidad Francisco de Paula Santander · Cúcuta
+   ============================================================ */
+
+:root {
+  /* Orange scale */
+  --orange-50:  #fff4ed;
+  --orange-100: #ffe4cc;
+  --orange-200: #ffc490;
+  --orange-300: #ff9d52;
+  --orange-400: #ff7520;
+  --orange-500: #ff5500;
+  --orange-600: #e04400;
+  --orange-700: #b33500;
+  --orange-800: #8a2800;
+  --orange-900: #5c1a00;
+
+  /* Dark Navy / Black scale */
+  --navy-50:  #f0f1f5;
+  --navy-100: #d5d8e8;
+  --navy-200: #9fa8c8;
+  --navy-300: #6878a8;
+  --navy-400: #3d4f80;
+  --navy-500: #1e2d5a;
+  --navy-600: #151f3f;
+  --navy-700: #0d1429;
+  --navy-800: #090e1c;
+  --navy-900: #04070f;
+
+  /* Blue scale */
+  --blue-50:  #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-200: #93c5fd;
+  --blue-300: #60a5fa;
+  --blue-400: #3b82f6;
+  --blue-500: #1d6ff5;
+  --blue-600: #1558cc;
+  --blue-700: #0d3fa3;
+  --blue-800: #072d7a;
+  --blue-900: #031b52;
+
+  /* Neutral */
+  --white:     #ffffff;
+  --off-white: #f5f5f7;
+  --gray-100:  #e8e8ed;
+  --gray-200:  #cfcfd8;
+  --gray-300:  #9898a8;
+  --gray-400:  #606070;
+  --gray-500:  #3a3a48;
+  --black:     #0a0a0f;
+
+  /* Semantic color tokens */
+  --color-brand:         var(--orange-500);
+  --color-brand-hover:   var(--orange-400);
+  --color-brand-press:   var(--orange-600);
+  --color-brand-glow:    rgba(255, 85, 0, 0.35);
+  --color-brand-subtle:  rgba(255, 85, 0, 0.12);
+
+  --color-accent:        var(--blue-500);
+  --color-accent-hover:  var(--blue-400);
+  --color-accent-subtle: rgba(29, 111, 245, 0.12);
+
+  --color-bg:            var(--navy-900);
+  --color-bg-surface:    var(--navy-800);
+  --color-bg-elevated:   var(--navy-700);
+  --color-bg-overlay:    rgba(9, 14, 28, 0.85);
+
+  --color-fg:            var(--white);
+  --color-fg-muted:      var(--gray-200);
+  --color-fg-subtle:     var(--gray-300);
+  --color-fg-disabled:   var(--gray-400);
+
+  --color-border:        rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.16);
+  --color-border-brand:  rgba(255, 85, 0, 0.4);
+
+  --color-success: #22c55e;
+  --color-warning: #facc15;
+  --color-error:   #ef4444;
+  --color-info:    var(--blue-400);
+
+  /* Typography families */
+  --font-display: 'Barlow Condensed', 'Rajdhani', sans-serif;
+  --font-body:    'Barlow', sans-serif;
+  --font-ui:      'Rajdhani', 'Barlow', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+
+  /* Type scale */
+  --text-xs:   0.75rem;
+  --text-sm:   0.875rem;
+  --text-base: 1rem;
+  --text-lg:   1.125rem;
+  --text-xl:   1.25rem;
+  --text-2xl:  1.5rem;
+  --text-3xl:  1.875rem;
+  --text-4xl:  2.25rem;
+  --text-5xl:  3rem;
+  --text-6xl:  3.75rem;
+  --text-7xl:  4.5rem;
+  --text-8xl:  6rem;
+  --text-9xl:  8rem;
+
+  /* Line heights */
+  --leading-tight:  1.1;
+  --leading-snug:   1.3;
+  --leading-normal: 1.5;
+  --leading-loose:  1.75;
+
+  /* Letter spacing */
+  --tracking-tight:  -0.02em;
+  --tracking-normal: 0em;
+  --tracking-wide:   0.05em;
+  --tracking-wider:  0.1em;
+  --tracking-widest: 0.2em;
+
+  /* Weights */
+  --weight-regular:   400;
+  --weight-medium:    500;
+  --weight-semibold:  600;
+  --weight-bold:      700;
+  --weight-extrabold: 800;
+  --weight-black:     900;
+
+  /* Spacing */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+  --space-32: 8rem;
+
+  /* Border radius */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-2xl:  24px;
+  --radius-full: 9999px;
+
+  /* Shadows / Glow */
+  --shadow-sm:     0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:     0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg:     0 8px 32px rgba(0,0,0,0.6);
+  --shadow-xl:     0 16px 64px rgba(0,0,0,0.7);
+  --glow-brand:    0 0 20px rgba(255,85,0,0.5), 0 0 40px rgba(255,85,0,0.2);
+  --glow-brand-sm: 0 0 8px rgba(255,85,0,0.6);
+  --glow-blue:     0 0 20px rgba(29,111,245,0.4);
+
+  /* Transitions */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out:    cubic-bezier(0, 0, 0.2, 1);
+  --duration-fast:   120ms;
+  --duration-normal: 220ms;
+  --duration-slow:   400ms;
+
+  /* Z-index */
+  --z-base:    0;
+  --z-raised:  10;
+  --z-overlay: 100;
+  --z-modal:   200;
+  --z-toast:   300;
+  --z-tooltip: 400;
+}

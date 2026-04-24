@@ -1,0 +1,286 @@
+/* ── Shared public page wrapper ────────────────────────────── */
+.public-page {
+  padding-top: 64px;
+  min-height: 100vh;
+}
+
+/* ── Page hero small ───────────────────────────────────────── */
+.page-hero-small {
+  background: linear-gradient(180deg, rgba(30, 45, 90, 0.4) 0%, transparent 100%);
+  padding: 48px clamp(24px, 6vw, 80px) 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.page-hero-small h1 {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 60px);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  color: var(--color-fg);
+  margin: 0;
+}
+
+.page-hero-small h1 span {
+  color: var(--color-brand);
+}
+
+.page-hero-small p {
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 8px;
+  font-size: 15px;
+}
+
+/* ── Torneos section layout ────────────────────────────────── */
+.torneos-section {
+  padding: 56px clamp(24px, 6vw, 80px) 80px;
+}
+
+.torneos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+/* ── HUD Card ──────────────────────────────────────────────── */
+.hud-card {
+  position: relative;
+  background: var(--color-bg-surface);
+  padding: 20px;
+  cursor: pointer;
+  transition: transform 240ms var(--ease-spring), background var(--duration-normal);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+  overflow: visible;
+}
+
+/* Corner brackets — top-left and bottom-right via ::before/::after */
+.hud-card::before,
+.hud-card::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  transition: width var(--duration-normal), height var(--duration-normal);
+}
+
+.hud-card::before {
+  top: 0;
+  left: 0;
+  border-top: 2px solid rgba(255, 85, 0, 0.5);
+  border-left: 2px solid rgba(255, 85, 0, 0.5);
+}
+
+.hud-card::after {
+  bottom: 0;
+  right: 0;
+  border-bottom: 2px solid rgba(255, 85, 0, 0.5);
+  border-right: 2px solid rgba(255, 85, 0, 0.5);
+}
+
+.hud-card:hover::before,
+.hud-card:hover::after {
+  width: 18px;
+  height: 18px;
+}
+
+.hud-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  background: var(--color-bg-elevated);
+}
+
+.hud-card:hover .hud-glow {
+  opacity: 1;
+}
+
+/* Extra corners — top-right and bottom-left */
+.corner-tr,
+.corner-bl {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  transition: width var(--duration-normal);
+}
+
+.corner-tr {
+  top: 0;
+  right: 18px;
+  border-top: 2px solid rgba(255, 85, 0, 0.5);
+}
+
+.corner-bl {
+  bottom: 0;
+  left: 18px;
+  border-bottom: 2px solid rgba(255, 85, 0, 0.5);
+}
+
+.hud-card:hover .corner-tr,
+.hud-card:hover .corner-bl {
+  width: 24px;
+}
+
+.hud-glow {
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 1px rgba(255, 85, 0, 0.2), 0 0 28px rgba(255, 85, 0, 0.12);
+  clip-path: inherit;
+  opacity: 0;
+  transition: opacity var(--duration-normal);
+  pointer-events: none;
+}
+
+/* ── Card photo thumbnail ──────────────────────────────────── */
+.t-card-photo {
+  position: relative;
+  width: calc(100% + 40px);
+  margin: -20px -20px 16px -20px;
+  height: 160px;
+  overflow: hidden;
+}
+
+.t-card-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+.t-card-photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, var(--color-bg-surface) 100%);
+}
+
+/* ── Year watermark ────────────────────────────────────────── */
+.t-year-bg {
+  position: absolute;
+  top: -8px;
+  right: -4px;
+  font-family: var(--font-display);
+  font-size: 88px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: rgba(255, 85, 0, 0.06);
+  line-height: 1;
+  text-transform: uppercase;
+  pointer-events: none;
+  user-select: none;
+  transition: color var(--duration-normal);
+}
+
+.hud-card:hover .t-year-bg {
+  color: rgba(255, 85, 0, 0.1);
+}
+
+/* ── Badge ─────────────────────────────────────────────────── */
+.t-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 2px;
+  margin-bottom: 14px;
+}
+
+.t-badge-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.t-badge.active {
+  background: rgba(255, 85, 0, 0.15);
+  color: var(--color-brand);
+  border: 1px solid rgba(255, 85, 0, 0.3);
+}
+
+.t-badge.done {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--gray-400);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ── Card content ──────────────────────────────────────────── */
+.t-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  margin-bottom: 6px;
+  color: var(--color-fg);
+}
+
+.t-meta {
+  font-size: 11px;
+  color: var(--gray-400);
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+
+.t-divider {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 85, 0, 0.4), transparent);
+  margin-bottom: 10px;
+}
+
+.t-winner {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-warning);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.t-winner-label {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+/* ── Footer shared ─────────────────────────────────────────── */
+.landing-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 32px clamp(24px, 6vw, 80px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footer-logo {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+.footer-logo em {
+  color: var(--color-brand);
+  font-style: normal;
+}
+
+.footer-text {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+/* ── Torneos page ────────────────────────────────────────── */
+.torneos-page {}
+
+@media (max-width: 640px) {
+  .torneos-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,339 @@
+/* Shared public page */
+.salon-page {}
+
+.salon-section {
+  padding: 56px clamp(24px, 6vw, 80px) 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 72px;
+}
+
+.salon-block {}
+
+/* ── Section header ────────────────────────────────────────── */
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+  margin-bottom: 20px;
+}
+
+.section-title span {
+  color: var(--color-brand);
+}
+
+/* ── Badges row ────────────────────────────────────────────── */
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 40px;
+}
+
+/* HUD angular badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 11px;
+  padding: 5px 10px 5px 8px;
+  clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  transition: filter 180ms, transform 150ms;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.badge:hover {
+  transform: scale(1.05);
+  filter: brightness(1.15);
+}
+
+.badge-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+  box-shadow: 0 0 4px currentColor;
+}
+
+.b-active   { background: rgba(255, 85, 0, 0.18);   color: #ff7520; }
+.b-finished { background: rgba(255, 255, 255, 0.07); color: #808090; }
+.b-upcoming { background: rgba(29, 111, 245, 0.18);  color: #60a5fa; }
+.b-champ    { background: rgba(250, 204, 21, 0.15);  color: #facc15; }
+.b-winner   { background: rgba(34, 197, 94, 0.15);   color: #4ade80; }
+.b-danger   { background: rgba(239, 68, 68, 0.15);   color: #f87171; }
+
+/* Skewed tag */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 10px;
+  padding: 4px 12px;
+  border: 1px solid currentColor;
+  transform: skewX(-8deg);
+  transition: background 180ms, transform 180ms, box-shadow 180ms;
+  cursor: default;
+}
+
+.tag span {
+  display: inline-block;
+  transform: skewX(8deg);
+}
+
+.tag:hover {
+  transform: skewX(-8deg) scale(1.06);
+}
+
+.tag-orange { color: rgba(255, 85, 0, 0.7);         border-color: rgba(255, 85, 0, 0.35);        background: rgba(255, 85, 0, 0.08); }
+.tag-orange:hover { background: rgba(255, 85, 0, 0.16); box-shadow: 0 0 10px rgba(255, 85, 0, 0.25); }
+.tag-gray   { color: rgba(255, 255, 255, 0.35);     border-color: rgba(255, 255, 255, 0.1);      background: rgba(255, 255, 255, 0.04); }
+.tag-blue   { color: rgba(96, 165, 250, 0.8);       border-color: rgba(29, 111, 245, 0.3);       background: rgba(29, 111, 245, 0.08); }
+.tag-gold   { color: rgba(250, 204, 21, 0.85);      border-color: rgba(250, 204, 21, 0.3);       background: rgba(250, 204, 21, 0.08); }
+
+/* ── Podium ────────────────────────────────────────────────── */
+.podium-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.podium-block {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.podium-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--navy-500), var(--navy-800));
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--color-fg);
+  margin-bottom: 10px;
+}
+
+.podium-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-fg);
+  margin-bottom: 4px;
+}
+
+.podium-year {
+  font-size: 11px;
+  color: var(--gray-300);
+  margin-bottom: 10px;
+}
+
+/* Podium steps */
+.podium-step {
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 900;
+}
+
+.pos-1 {
+  height: 110px;
+  width: 130px;
+  background: linear-gradient(180deg, #fde047, #b8860b);
+  font-size: 32px;
+  color: #1a0f00;
+  box-shadow: 0 0 24px rgba(250, 204, 21, 0.4);
+}
+
+.pos-1 ~ .podium-avatar,
+.podium-block:has(.pos-1) .podium-avatar {
+  width: 76px;
+  height: 76px;
+  border-color: #facc15;
+  box-shadow: 0 0 16px rgba(250, 204, 21, 0.3);
+  font-size: 26px;
+}
+
+.pos-2 {
+  height: 80px;
+  width: 120px;
+  background: linear-gradient(180deg, #d4d4d8, #71717a);
+  font-size: 28px;
+  color: #0a0a0f;
+}
+
+.pos-3 {
+  height: 60px;
+  width: 110px;
+  background: linear-gradient(180deg, #f97316, #7c2d12);
+  font-size: 24px;
+  color: #fff8f0;
+}
+
+.podium-base {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 0 0 4px 4px;
+}
+
+/* Make 1st place avatar bigger using adjacent sibling trick */
+.podium-block:nth-child(2) .podium-avatar {
+  width: 76px;
+  height: 76px;
+  border-color: #facc15;
+  box-shadow: 0 0 16px rgba(250, 204, 21, 0.3);
+  font-size: 26px;
+}
+
+/* ── Awards grid ───────────────────────────────────────────── */
+.awards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 40px;
+}
+
+.award-card {
+  background: var(--color-bg-surface);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: border-color var(--duration-normal), box-shadow var(--duration-normal);
+}
+
+.award-card:hover {
+  border-color: rgba(255, 85, 0, 0.25);
+  box-shadow: 0 0 20px rgba(255, 85, 0, 0.08);
+}
+
+.award-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.award-title {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gray-300);
+  margin-bottom: 4px;
+}
+
+.award-name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+.award-sub {
+  font-size: 12px;
+  color: var(--gray-400);
+  margin-top: 3px;
+}
+
+/* Footer / shared classes from torneos */
+.landing-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 32px clamp(24px, 6vw, 80px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footer-logo {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+.footer-logo em {
+  color: var(--color-brand);
+  font-style: normal;
+}
+
+.footer-text {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+/* page-hero-small shared */
+.page-hero-small {
+  background: linear-gradient(180deg, rgba(30, 45, 90, 0.4) 0%, transparent 100%);
+  padding: 48px clamp(24px, 6vw, 80px) 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.page-hero-small h1 {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 60px);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  color: var(--color-fg);
+  margin: 0;
+}
+
+.page-hero-small h1 span {
+  color: var(--color-brand);
+}
+
+.page-hero-small p {
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 8px;
+  font-size: 15px;
+}
+
+@media (max-width: 640px) {
+  .podium-wrap {
+    gap: 8px;
+  }
+
+  .podium-name {
+    font-size: 12px;
+  }
+
+  .awards-grid {
+    grid-template-columns: 1fr;
+  }
+}

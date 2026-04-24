@@ -4,19 +4,29 @@ import ArbitroDashboard from './pages/ArbitroDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import DelegadoDashboard from './pages/DelegadoDashboard';
+import Galeria from './pages/Galeria';
 import GoogleCallbackPage from './pages/GoogleCallbackPage';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import SalonDeLaFama from './pages/SalonDeLaFama';
+import Torneos from './pages/Torneos';
 import './styles/app-shell.css';
 
 function App() {
   return (
     <div className="app-shell">
       <Routes>
+        {/* Public */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/torneos" element={<Torneos />} />
+        <Route path="/salon-de-la-fama" element={<SalonDeLaFama />} />
+        <Route path="/galeria" element={<Galeria />} />
+
+        {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
 
+        {/* Protected */}
         <Route
           path="/cambiar-contrasena"
           element={(
@@ -25,7 +35,6 @@ function App() {
             </ProtectedRoute>
           )}
         />
-
         <Route
           path="/dashboard/admin"
           element={(
@@ -34,7 +43,6 @@ function App() {
             </ProtectedRoute>
           )}
         />
-
         <Route
           path="/dashboard/arbitro"
           element={(
@@ -43,7 +51,6 @@ function App() {
             </ProtectedRoute>
           )}
         />
-
         <Route
           path="/dashboard/delegado"
           element={(
