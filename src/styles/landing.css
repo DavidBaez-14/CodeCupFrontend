@@ -197,6 +197,15 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
+.hero-enrollment-meeting {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
 /* ── DIVIDER ───────────────────────────────────────────────── */
 .divider-orange {
   height: 1px;

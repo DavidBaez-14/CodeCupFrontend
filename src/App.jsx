@@ -6,6 +6,7 @@ import ChangePasswordPage from './pages/ChangePasswordPage';
 import DelegadoDashboard from './pages/DelegadoDashboard';
 import Galeria from './pages/Galeria';
 import GoogleCallbackPage from './pages/GoogleCallbackPage';
+import InscripcionPage from './pages/InscripcionPage';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SalonDeLaFama from './pages/SalonDeLaFama';
@@ -18,6 +19,7 @@ function App() {
       <Routes>
         {/* Public */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/inscripcion" element={<InscripcionPage />} />
         <Route path="/torneos" element={<Torneos />} />
         <Route path="/salon-de-la-fama" element={<SalonDeLaFama />} />
         <Route path="/galeria" element={<Galeria />} />
