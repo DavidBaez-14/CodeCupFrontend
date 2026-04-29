@@ -1,6 +1,6 @@
 import { requestJson } from './http';
 
-const BACKEND_ORIGIN = import.meta.env.VITE_BACKEND_ORIGIN || 'http://localhost:8081';
+const BACKEND_ORIGIN = import.meta.env.VITE_BACKEND_ORIGIN || 'https://authcodecup-cykcc.ondigitalocean.app/';
 
 export function login(correo, contrasena) {
   return requestJson('/api/auth/login', {
