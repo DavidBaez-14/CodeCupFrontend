@@ -1,3 +1,5 @@
+const BACKEND_ORIGIN = import.meta.env.VITE_BACKEND_ORIGIN || 'https://authcodecup-cykcc.ondigitalocean.app';
+
 async function parseBody(response) {
   const contentType = response.headers.get('content-type') || '';
   if (contentType.includes('application/json')) {
@@ -8,7 +10,8 @@ async function parseBody(response) {
 }
 
 export async function requestJson(path, options = {}) {
-  const response = await fetch(path, options);
+  const url = /^https?:\/\//i.test(path) ? path : `${BACKEND_ORIGIN}${path}`;
+  const response = await fetch(url, options);
   const body = await parseBody(response);
 
   if (!response.ok) {
