@@ -1,13 +1,22 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
-import { registrar } from '../api/auth';
+import { registrar, registrarJugador } from '../api/auth';
 import { appwriteCreateJwt, appwriteLogin, appwriteLogout, appwriteOAuthGoogle, appwriteSignup } from '../lib/appwrite';
+import { pickPrimaryRole, setSession } from '../utils/session';
 import '../styles/login.css';
 
-const ROLES_SOLICITABLES = [
+const TIPOS_CUENTA = [
+  { value: 'JUGADOR', label: 'Jugador' },
   { value: 'ARBITRO', label: 'Árbitro' },
   { value: 'DELEGADO', label: 'Delegado' },
+];
+
+const ROLES_JUGADOR = [
+  { value: 'ESTUDIANTE', label: 'Estudiante' },
+  { value: 'GRADUADO', label: 'Graduado' },
+  { value: 'PROFESOR', label: 'Profesor' },
+  { value: 'ADMINISTRATIVO', label: 'Administrativo' },
 ];
 
 function SignupPage() {
@@ -21,7 +30,10 @@ function SignupPage() {
     contrasena: '',
     contrasenaConfirm: '',
     cedula: '',
-    rolSolicitado: 'ARBITRO',
+    tipoCuenta: 'JUGADOR',
+    rolJugador: 'ESTUDIANTE',
+    codigoUniversitario: '',
+    semestre: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -36,8 +48,9 @@ function SignupPage() {
     try {
       await appwriteLogout();
       const origin = window.location.origin;
+      const tipo = encodeURIComponent(form.tipoCuenta || 'JUGADOR');
       appwriteOAuthGoogle({
-        successUrl: `${origin}/oauth/callback`,
+        successUrl: `${origin}/oauth/callback?tipo=${tipo}`,
         failureUrl: `${origin}/login?oauthError=${encodeURIComponent('No se pudo autenticar con Google.')}`,
       });
     } catch (err) {
@@ -61,6 +74,16 @@ function SignupPage() {
       setError('La cédula debe contener entre 6 y 15 dígitos.');
       return;
     }
+    if (form.tipoCuenta === 'JUGADOR' && form.rolJugador === 'ESTUDIANTE') {
+      if (!form.codigoUniversitario.trim()) {
+        setError('El código estudiantil es obligatorio.');
+        return;
+      }
+      if (!/^[1-9]\d*$/.test(String(form.semestre).trim())) {
+        setError('El semestre debe ser un número válido.');
+        return;
+      }
+    }
 
     setLoading(true);
     try {
@@ -80,11 +103,30 @@ function SignupPage() {
       // 3. JWT corto que el backend va a verificar.
       const appwriteJwt = await appwriteCreateJwt();
 
-      // 4. Crea el Perfil PENDIENTE en el backend.
+      if (form.tipoCuenta === 'JUGADOR') {
+        const data = await registrarJugador({
+          appwriteJwt,
+          cedula: form.cedula.trim(),
+          rolJugador: form.rolJugador,
+          codigoUniversitario: form.rolJugador === 'ESTUDIANTE' ? form.codigoUniversitario.trim() : null,
+          semestre: form.rolJugador === 'ESTUDIANTE' ? Number(form.semestre) : null,
+        });
+        const rolPrimario = pickPrimaryRole(data.roles);
+        setSession({
+          token: data.token,
+          rol: rolPrimario,
+          nombre: data.nombre,
+          email: data.correo,
+        });
+        navigate('/dashboard/jugador', { replace: true });
+        return;
+      }
+
+      // 4. Crea el Perfil PENDIENTE en el backend (árbitro / delegado).
       await registrar({
         appwriteJwt,
         cedula: form.cedula.trim(),
-        rolSolicitado: form.rolSolicitado,
+        rolSolicitado: form.tipoCuenta,
       });
 
       navigate('/pending', { replace: true });
@@ -110,7 +152,11 @@ function SignupPage() {
         </div>
 
         <div className="login-title">Crear cuenta</div>
-        <div className="login-sub">Tu solicitud quedará pendiente de aprobación por un administrador</div>
+        <div className="login-sub">
+          {form.tipoCuenta === 'JUGADOR'
+            ? 'Tu cuenta de jugador quedará activa de inmediato.'
+            : 'Tu solicitud quedará pendiente de aprobación por un administrador.'}
+        </div>
         {hint && <div className="login-hint">{hint}</div>}
 
         <form onSubmit={handleSubmit}>
@@ -159,20 +205,71 @@ function SignupPage() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="rolSolicitado">Rol solicitado</label>
+              <label className="form-label" htmlFor="tipoCuenta">Tipo de cuenta</label>
               <select
-                id="rolSolicitado"
-                name="rolSolicitado"
+                id="tipoCuenta"
+                name="tipoCuenta"
                 className="form-input"
-                value={form.rolSolicitado}
+                value={form.tipoCuenta}
                 onChange={handleChange}
               >
-                {ROLES_SOLICITABLES.map((opt) => (
+                {TIPOS_CUENTA.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
             </div>
           </div>
+
+          {form.tipoCuenta === 'JUGADOR' && (
+            <div className="form-group">
+              <label className="form-label" htmlFor="rolJugador">Rol del jugador</label>
+              <select
+                id="rolJugador"
+                name="rolJugador"
+                className="form-input"
+                value={form.rolJugador}
+                onChange={handleChange}
+              >
+                {ROLES_JUGADOR.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {form.tipoCuenta === 'JUGADOR' && form.rolJugador === 'ESTUDIANTE' && (
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label" htmlFor="codigoUniversitario">Código estudiantil</label>
+                <input
+                  id="codigoUniversitario"
+                  name="codigoUniversitario"
+                  className="form-input"
+                  type="text"
+                  placeholder="1155404..."
+                  value={form.codigoUniversitario}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="semestre">Semestre actual</label>
+                <input
+                  id="semestre"
+                  name="semestre"
+                  className="form-input"
+                  type="number"
+                  min="1"
+                  max="20"
+                  placeholder="7"
+                  value={form.semestre}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+          )}
 
           <div className="form-group">
             <label className="form-label" htmlFor="contrasena">Contraseña (mínimo 8 caracteres)</label>

@@ -10,6 +10,7 @@ const ROLE_ROUTE = {
   ADMINISTRADOR: '/dashboard/admin',
   ARBITRO: '/dashboard/arbitro',
   DELEGADO: '/dashboard/delegado',
+  JUGADOR: '/dashboard/jugador',
 };
 
 function LoginPage() {

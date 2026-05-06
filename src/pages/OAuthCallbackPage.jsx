@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
 import { exchange } from '../api/auth';
 import { appwriteCreateJwt, appwriteCurrentUser, appwriteLogout } from '../lib/appwrite';
@@ -10,10 +10,12 @@ const ROLE_ROUTE = {
   ADMINISTRADOR: '/dashboard/admin',
   ARBITRO: '/dashboard/arbitro',
   DELEGADO: '/dashboard/delegado',
+  JUGADOR: '/dashboard/jugador',
 };
 
 function OAuthCallbackPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -47,9 +49,17 @@ function OAuthCallbackPage() {
           navigate('/pending', { replace: true });
           return;
         }
-        // Usuario nuevo en Appwrite (acaba de crearse vía Google) sin Perfil en backend.
-        if (/no registrado/i.test(mensaje)) {
-          navigate('/complete-signup', { replace: true });
+        // Usuario nuevo en Google: sin labels → el backend lanza "Usuario sin rol asignado."
+        // O un usuario que aún no completó su perfil → "no registrado" / "Perfil no registrado".
+        if (
+          /sin rol asignado/i.test(mensaje) ||
+          /no registrado/i.test(mensaje) ||
+          /perfil no registrado/i.test(mensaje)
+        ) {
+          const params = new URLSearchParams(location.search);
+          const tipo = params.get('tipo');
+          const destino = tipo ? `/complete-signup?tipo=${encodeURIComponent(tipo)}` : '/complete-signup';
+          navigate(destino, { replace: true });
           return;
         }
 
@@ -60,7 +70,7 @@ function OAuthCallbackPage() {
 
     run();
     return () => { cancelled = true; };
-  }, [navigate]);
+  }, [location.search, navigate]);
 
   return (
     <div className="login-wrap">

@@ -6,6 +6,7 @@ import CompleteSignupPage from './pages/CompleteSignupPage';
 import DelegadoDashboard from './pages/DelegadoDashboard';
 import Galeria from './pages/Galeria';
 import InscripcionPage from './pages/InscripcionPage';
+import JugadorDashboard from './pages/JugadorDashboard';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import OAuthCallbackPage from './pages/OAuthCallbackPage';
@@ -59,6 +60,14 @@ function App() {
           element={(
             <ProtectedRoute allowedRoles={['DELEGADO']}>
               <DelegadoDashboard />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/dashboard/jugador"
+          element={(
+            <ProtectedRoute allowedRoles={['JUGADOR']}>
+              <JugadorDashboard />
             </ProtectedRoute>
           )}
         />

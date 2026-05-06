@@ -39,7 +39,7 @@ export function hasSession() {
 
 export function pickPrimaryRole(roles) {
   if (!Array.isArray(roles) || roles.length === 0) return null;
-  const order = ['administrador', 'arbitro', 'delegado'];
+  const order = ['administrador', 'arbitro', 'delegado', 'jugador'];
   const found = order.find((r) => roles.map((x) => String(x).toLowerCase()).includes(r));
   return (found || roles[0]).toUpperCase();
 }

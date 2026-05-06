@@ -1,0 +1,144 @@
+.jugador-shell .role-topbar {
+  gap: var(--space-5);
+}
+
+.jugador-topbar {
+  align-items: center;
+}
+
+.jugador-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px;
+  border-radius: 999px;
+}
+
+.jugador-tab {
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-widest);
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all var(--duration-normal);
+}
+
+.jugador-tab.active {
+  background: var(--color-brand);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(255, 85, 0, 0.4);
+}
+
+.jugador-content {
+  gap: var(--space-5);
+}
+
+.equipo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+.equipo-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-elevated);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.equipo-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
+}
+
+.equipo-info h3 {
+  margin: 0 0 4px;
+  font-size: var(--text-base);
+}
+
+.equipo-info p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-fg-muted);
+}
+
+.perfil-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.perfil-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.perfil-summary h3 {
+  margin: 0 0 4px;
+  font-size: var(--text-2xl);
+}
+
+.perfil-metric {
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.perfil-metric span {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-fg-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-widest);
+}
+
+.perfil-metric strong {
+  font-size: var(--text-xl);
+  color: var(--color-fg);
+}
+
+.perfil-block {
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.perfil-block h4 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-base);
+}
+
+.perfil-block ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+@media (max-width: 720px) {
+  .jugador-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .jugador-tabs {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
