@@ -1,4 +1,4 @@
-const BACKEND_ORIGIN = import.meta.env.VITE_BACKEND_ORIGIN || 'https://authcodecup-cykcc.ondigitalocean.app';
+const BACKEND_ORIGIN = import.meta.env.VITE_BACKEND_ORIGIN ?? '';
 
 async function parseBody(response) {
   const contentType = response.headers.get('content-type') || '';

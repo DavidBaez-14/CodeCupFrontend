@@ -1,418 +1,551 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createUser } from '../api/users';
-import { uploadCsv } from '../api/jugadores';
-import { listUsers } from '../api/usuarios';
-import { clearSession, getNombre, getToken } from '../utils/session';
-import '../styles/dashboard.css';
-
-const INITIAL_USER_FORM = {
-  correo: '',
-  nombre: '',
-  cedula: '',
-  rolSistema: 'DELEGADO',
-};
+import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
+import { aprobarRegistro, listPendientes, rechazarRegistro } from '../api/registros';
+import { getJugadorByCedula, uploadCsv } from '../api/jugadores';
+import { appwriteLogout } from '../lib/appwrite';
+import { clearSession, getEmail, getNombre, getToken } from '../utils/session';
+import '../styles/admin.css';
 
 const SIDEBAR_GROUPS = [
   {
-    title: 'IDENTIDAD',
+    title: 'Identidad',
     items: [
-      { id: 'usuarios', label: 'Usuarios del sistema', icon: '👥' },
-      { id: 'csv', label: 'Cargar jugadores CSV', icon: '⤴' },
+      { id: 'pendientes', label: 'Solicitudes pendientes', live: true },
+      { id: 'csv', label: 'Cargar jugadores CSV', live: true },
+      { id: 'buscar', label: 'Buscar jugador', live: true },
     ],
   },
   {
-    title: 'TORNEO',
+    title: 'Torneo',
     items: [
-      { id: 'torneo', label: 'Configurar torneo', icon: '⚙' },
-      { id: 'equipos', label: 'Gestionar equipos', icon: '🛡' },
-      { id: 'fixture', label: 'Fixture y cronograma', icon: '📅' },
-      { id: 'aplazamientos', label: 'Aplazamientos', icon: '⏱' },
-      { id: 'resultados', label: 'Resultados', icon: '☑' },
+      { id: 'torneo', label: 'Configurar torneo' },
+      { id: 'equipos', label: 'Gestionar equipos' },
+      { id: 'fixture', label: 'Fixture y cronograma' },
+      { id: 'aplazamientos', label: 'Aplazamientos' },
     ],
   },
   {
-    title: 'FINANZAS',
+    title: 'Finanzas',
     items: [
-      { id: 'comprobantes', label: 'Comprobantes pendientes', icon: '📄' },
-      { id: 'multas', label: 'Multas activas', icon: '⚠' },
+      { id: 'comprobantes', label: 'Comprobantes pendientes' },
+      { id: 'multas', label: 'Multas activas' },
     ],
   },
   {
-    title: 'REPORTES',
+    title: 'Reportes',
     items: [
-      { id: 'estadisticas', label: 'Estadisticas', icon: '📊' },
-      { id: 'reporte', label: 'Reporte PDF', icon: '⬇' },
-      { id: 'fama', label: 'Salon de la Fama', icon: '🏆' },
+      { id: 'estadisticas', label: 'Estadísticas' },
+      { id: 'reporte', label: 'Reporte PDF' },
+      { id: 'fama', label: 'Salón de la Fama' },
     ],
   },
 ];
 
+const VIEW_LABEL = {
+  pendientes: 'Solicitudes pendientes',
+  csv: 'Cargar jugadores CSV',
+  buscar: 'Buscar jugador',
+};
+
+const ROL_LABEL = {
+  ARBITRO: 'Árbitro',
+  DELEGADO: 'Delegado',
+  ADMINISTRADOR: 'Administrador',
+};
+
+function formatFecha(value) {
+  if (!value) return '—';
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString('es-CO', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return value;
+  }
+}
+
 function AdminDashboard() {
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState('usuarios');
-  const [userForm, setUserForm] = useState(INITIAL_USER_FORM);
-  const [userResult, setUserResult] = useState(null);
-  const [userError, setUserError] = useState('');
-  const [creatingUser, setCreatingUser] = useState(false);
+  const [activeView, setActiveView] = useState('pendientes');
+  const nombre = getNombre() || 'Administrador';
+  const email = getEmail() || '';
 
-  const [csvFile, setCsvFile] = useState(null);
-  const [csvResult, setCsvResult] = useState(null);
-  const [csvError, setCsvError] = useState('');
-  const [uploadingCsv, setUploadingCsv] = useState(false);
-  const [csvPreviewRows, setCsvPreviewRows] = useState([]);
-
-  const [filtroRol, setFiltroRol] = useState('TODOS');
-  const [buscarUsuario, setBuscarUsuario] = useState('');
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  const [usersError, setUsersError] = useState('');
-  const [users, setUsers] = useState([]);
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
     clearSession();
+    await appwriteLogout();
     navigate('/');
   };
 
-  const handleUserChange = (event) => {
-    const { name, value } = event.target;
-    setUserForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleCreateUser = async (event) => {
-    event.preventDefault();
-    setCreatingUser(true);
-    setUserError('');
-    setUserResult(null);
-
-    try {
-      const payload = {
-        ...userForm,
-        cedula: userForm.cedula.trim(),
-      };
-      const response = await createUser(payload, getToken());
-      setUserResult(response);
-      setUserForm(INITIAL_USER_FORM);
-    } catch (requestError) {
-      setUserError(requestError.message || 'No fue posible crear el usuario.');
-    } finally {
-      setCreatingUser(false);
-    }
-  };
-
-  const handleUploadCsv = async (event) => {
-    event.preventDefault();
-    if (!csvFile) {
-      setCsvError('Selecciona un archivo CSV antes de enviar.');
-      return;
-    }
-
-    setUploadingCsv(true);
-    setCsvError('');
-    setCsvResult(null);
-
-    try {
-      const response = await uploadCsv(csvFile, getToken());
-      setCsvResult(response);
-    } catch (requestError) {
-      setCsvError(requestError.message || 'No fue posible cargar el CSV.');
-    } finally {
-      setUploadingCsv(false);
-    }
-  };
-
-  const handleCsvFileChange = async (event) => {
-    const file = event.target.files?.[0] || null;
-    setCsvFile(file);
-    setCsvResult(null);
-    setCsvError('');
-
-    if (!file) {
-      setCsvPreviewRows([]);
-      return;
-    }
-
-    try {
-      const content = await file.text();
-      const lines = content
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean);
-
-      if (lines.length <= 1) {
-        setCsvPreviewRows([]);
-        return;
-      }
-
-      const headers = lines[0].split(',').map((value) => value.trim().toLowerCase());
-      const idxNombre = headers.indexOf('nombre');
-      const idxCedula = headers.indexOf('cedula');
-      const idxRol = headers.indexOf('rol_jugador');
-      const idxCodigo = headers.indexOf('codigo_universitario');
-      const idxSemestre = headers.indexOf('semestre');
-
-      const rows = lines.slice(1).map((line) => {
-        const cols = line.split(',').map((value) => value.trim());
-        return {
-          nombre: idxNombre >= 0 ? cols[idxNombre] || '' : '',
-          cedula: idxCedula >= 0 ? cols[idxCedula] || '' : '',
-          rolJugador: idxRol >= 0 ? cols[idxRol] || '' : '',
-          codigoUniversitario: idxCodigo >= 0 ? cols[idxCodigo] || '' : '',
-          semestre: idxSemestre >= 0 ? cols[idxSemestre] || '' : '',
-        };
-      }).filter((row) => row.nombre || row.cedula || row.rolJugador);
-
-      setCsvPreviewRows(rows);
-    } catch {
-      setCsvPreviewRows([]);
-    }
-  };
-
-  const cargarUsuarios = useCallback(async () => {
-    setLoadingUsers(true);
-    setUsersError('');
-
-    try {
-      const data = await listUsers({
-        token: getToken(),
-        rolSistema: filtroRol,
-        buscar: buscarUsuario,
-        page: 0,
-        size: 50,
-      });
-      setUsers(data.content || []);
-    } catch (requestError) {
-      setUsersError(requestError.message || 'No fue posible cargar los usuarios.');
-    } finally {
-      setLoadingUsers(false);
-    }
-  }, [filtroRol, buscarUsuario]);
-
-  useEffect(() => {
-    cargarUsuarios();
-  }, [cargarUsuarios]);
-
-  const isUsuariosView = activeView === 'usuarios';
-  const isCsvView = activeView === 'csv';
-
   return (
-    <main className="admin-layout">
-      <aside className="admin-sidebar">
-        <p className="admin-brand">CODE-CUP</p>
-
-        {SIDEBAR_GROUPS.map((group) => (
-          <section key={group.title}>
-            <p className="sidebar-group-title">{group.title}</p>
-            <div className="sidebar-links">
-              {group.items.map((item) => (
-                <button
-                  key={item.id}
-                  className={`sidebar-link ${activeView === item.id ? 'active' : ''}`}
-                  type="button"
-                  onClick={() => setActiveView(item.id)}
-                >
-                  <span aria-hidden="true">{item.icon}</span>
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </section>
-        ))}
-
-        <div className="sidebar-user-card">
-          <span>{(getNombre() || 'A').slice(0, 1).toUpperCase()}</span>
+    <main className="admin-shell">
+      <aside className="admin-sidebar-v2">
+        <div className="admin-brand-v2">
+          <img src={brandLogo} alt="" />
           <div>
-            <p>{getNombre() || 'Administrador'}</p>
-            <small>admin@codecup.local</small>
+            <p className="brand-title"><em>Code</em> Cup</p>
+            <p className="brand-sub">Panel de administrador</p>
           </div>
         </div>
-        <button className="nav-button danger" type="button" onClick={handleLogout}>Cerrar sesion</button>
+
+        <nav className="sidebar-nav">
+          {SIDEBAR_GROUPS.map((group) => (
+            <section key={group.title}>
+              <p className="sidebar-group">{group.title}</p>
+              <div className="sidebar-items">
+                {group.items.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`sidebar-item ${activeView === item.id ? 'active' : ''}`}
+                    onClick={() => setActiveView(item.id)}
+                  >
+                    <span className="sidebar-bullet" aria-hidden="true" />
+                    <span>{item.label}</span>
+                    {!item.live && <span className="sidebar-tag">próx.</span>}
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
+        </nav>
+
+        <div className="sidebar-user">
+          <div className="user-avatar">{nombre.slice(0, 1).toUpperCase()}</div>
+          <div className="user-meta">
+            <p className="user-name">{nombre}</p>
+            <small className="user-email">{email || 'admin@codecup.local'}</small>
+          </div>
+        </div>
+        <button className="logout-btn" type="button" onClick={handleLogout}>
+          Cerrar sesión
+        </button>
       </aside>
 
-      <section className="admin-content">
-        <header className="content-header">
-          <p className="crumb">Dashboard / {isUsuariosView || isCsvView ? 'Identidad' : 'Modulo'}</p>
-          <h1>{isUsuariosView ? 'Usuarios del sistema' : isCsvView ? 'Cargar jugadores CSV' : 'Modulo en construccion'}</h1>
+      <section className="admin-main">
+        <header className="admin-topbar">
+          <div>
+            <p className="crumb">Dashboard / Identidad</p>
+            <h1>{VIEW_LABEL[activeView] || 'Módulo en construcción'}</h1>
+          </div>
         </header>
 
-        {isUsuariosView ? (
-          <>
-            <section className="dashboard-grid">
-              <article className="panel-card">
-                <h2>Crear usuario</h2>
-                <form className="panel-form" onSubmit={handleCreateUser}>
-                  <label htmlFor="correo">Correo</label>
-                  <input id="correo" name="correo" type="email" value={userForm.correo} onChange={handleUserChange} required />
-
-                  <label htmlFor="nombre">Nombre</label>
-                  <input id="nombre" name="nombre" type="text" value={userForm.nombre} onChange={handleUserChange} required />
-
-                  <label htmlFor="cedula">Cedula</label>
-                  <input id="cedula" name="cedula" type="text" value={userForm.cedula} onChange={handleUserChange} required />
-
-                  <label htmlFor="rolSistema">Rol</label>
-                  <select id="rolSistema" name="rolSistema" value={userForm.rolSistema} onChange={handleUserChange}>
-                    <option value="DELEGADO">Delegado</option>
-                    <option value="ARBITRO">Arbitro</option>
-                  </select>
-
-                  <button className="primary-button" type="submit" disabled={creatingUser}>
-                    {creatingUser ? 'Creando...' : 'Crear usuario'}
-                  </button>
-                </form>
-
-                {userError ? <p className="error-text">{userError}</p> : null}
-                {userResult ? (
-                  <div className="result-box">
-                    <p><strong>Usuario creado:</strong> {userResult.usuario?.correo}</p>
-                    <p><strong>Rol:</strong> {userResult.usuario?.rolSistema}</p>
-                    <p><strong>Primer ingreso:</strong> usar cedula como contrasena inicial.</p>
-                  </div>
-                ) : null}
-              </article>
-            </section>
-
-            <section className="dashboard-grid">
-              <article className="panel-card">
-                <h2>Listado de cuentas</h2>
-                <form
-                  className="panel-form users-filter"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    cargarUsuarios();
-                  }}
-                >
-                  <label htmlFor="filtro-rol">Rol</label>
-                  <select id="filtro-rol" value={filtroRol} onChange={(event) => setFiltroRol(event.target.value)}>
-                    <option value="TODOS">Todos</option>
-                    <option value="ADMINISTRADOR">Administrador</option>
-                    <option value="ARBITRO">Arbitro</option>
-                    <option value="DELEGADO">Delegado</option>
-                  </select>
-
-                  <label htmlFor="buscar-usuario">Buscar (nombre o cedula)</label>
-                  <input
-                    id="buscar-usuario"
-                    type="text"
-                    value={buscarUsuario}
-                    onChange={(event) => setBuscarUsuario(event.target.value)}
-                    placeholder="Ej: David o 1098765432"
-                  />
-
-                  <button className="primary-button" type="submit" disabled={loadingUsers}>
-                    {loadingUsers ? 'Buscando...' : 'Aplicar filtros'}
-                  </button>
-                </form>
-
-                {usersError ? <p className="error-text">{usersError}</p> : null}
-
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Nombre</th>
-                        <th>Correo</th>
-                        <th>Rol</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {users.length ? (
-                        users.map((usuario) => (
-                          <tr key={usuario.id}>
-                            <td>{usuario.nombre}</td>
-                            <td>{usuario.correo}</td>
-                            <td>
-                              <span className={`role-chip role-${usuario.rolSistema?.toLowerCase?.()}`}>
-                                {usuario.rolSistema}
-                              </span>
-                            </td>
-                            <td>{usuario.activo ? 'Activo' : 'Inactivo'}</td>
-                            <td><button type="button" className="ghost-action" disabled>Toggle</button></td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={5}>No hay usuarios para los filtros seleccionados.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </article>
-            </section>
-          </>
-        ) : isCsvView ? (
-          <section className="dashboard-grid">
-            <article className="panel-card csv-panel">
-              <h2>Cargar CSV de jugadores</h2>
-              <form className="panel-form" onSubmit={handleUploadCsv}>
-                <label htmlFor="csv-file">Archivo CSV</label>
-                <input
-                  id="csv-file"
-                  type="file"
-                  accept=".csv"
-                  onChange={handleCsvFileChange}
-                  required
-                />
-
-                <button className="primary-button" type="submit" disabled={uploadingCsv}>
-                  {uploadingCsv ? 'Cargando...' : 'Subir CSV'}
-                </button>
-              </form>
-
-              {csvError ? <p className="error-text">{csvError}</p> : null}
-
-              {csvResult ? (
-                <div className="result-box">
-                  <p><strong>Importados:</strong> {csvResult.importados}</p>
-                  <p><strong>Actualizados:</strong> {csvResult.actualizados}</p>
-                  <p><strong>Rechazados:</strong> {csvResult.rechazados}</p>
-                </div>
-              ) : null}
-            </article>
-
-            <article className="panel-card">
-              <h2>Jugadores del archivo cargado</h2>
-              {csvResult && csvPreviewRows.length ? (
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Nombre</th>
-                        <th>Cedula</th>
-                        <th>Rol</th>
-                        <th>Codigo</th>
-                        <th>Semestre</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {csvPreviewRows.map((jugador, index) => (
-                        <tr key={`${jugador.cedula}-${index}`}>
-                          <td>{jugador.nombre || '-'}</td>
-                          <td>{jugador.cedula || '-'}</td>
-                          <td>{jugador.rolJugador || '-'}</td>
-                          <td>{jugador.codigoUniversitario || '-'}</td>
-                          <td>{jugador.semestre || '-'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="csv-empty-state">Sube un CSV exitosamente para visualizar la tabla de jugadores cargados.</p>
-              )}
-            </article>
-          </section>
-        ) : (
-          <section className="placeholder-module panel-card">
-            <p className="placeholder-icon">🧩</p>
-            <h2>Modulo disponible en Sprint 2</h2>
-            <p>Esta seccion ya tiene ubicacion y navegacion, pero su implementacion funcional se libera en el siguiente sprint.</p>
-          </section>
-        )}
+        {activeView === 'pendientes' && <PendientesView />}
+        {activeView === 'csv' && <CsvView />}
+        {activeView === 'buscar' && <BuscarJugadorView />}
+        {!['pendientes', 'csv', 'buscar'].includes(activeView) && <PlaceholderView />}
       </section>
     </main>
+  );
+}
+
+function PendientesView() {
+  const [registros, setRegistros] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [actioningId, setActioningId] = useState(null);
+  const [rechazo, setRechazo] = useState({ open: false, perfilId: null, nombre: '', motivo: '' });
+  const [feedback, setFeedback] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await listPendientes(getToken());
+      setRegistros(Array.isArray(data) ? data : data?.content || []);
+    } catch (err) {
+      setError(err?.message || 'No fue posible cargar las solicitudes pendientes.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleAprobar = async (perfil) => {
+    setActioningId(perfil.id);
+    setError('');
+    setFeedback('');
+    try {
+      await aprobarRegistro(perfil.id, getToken());
+      setFeedback(`Solicitud de ${perfil.nombre || perfil.email} aprobada.`);
+      setRegistros((prev) => prev.filter((r) => r.id !== perfil.id));
+    } catch (err) {
+      setError(err?.message || 'No fue posible aprobar la solicitud.');
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const openRechazo = (perfil) => {
+    setRechazo({ open: true, perfilId: perfil.id, nombre: perfil.nombre || perfil.email, motivo: '' });
+  };
+
+  const handleRechazar = async () => {
+    if (!rechazo.motivo.trim()) {
+      setError('Indica un motivo para el rechazo.');
+      return;
+    }
+    setActioningId(rechazo.perfilId);
+    setError('');
+    setFeedback('');
+    try {
+      await rechazarRegistro(rechazo.perfilId, rechazo.motivo.trim(), getToken());
+      setFeedback(`Solicitud de ${rechazo.nombre} rechazada.`);
+      setRegistros((prev) => prev.filter((r) => r.id !== rechazo.perfilId));
+      setRechazo({ open: false, perfilId: null, nombre: '', motivo: '' });
+    } catch (err) {
+      setError(err?.message || 'No fue posible rechazar la solicitud.');
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  return (
+    <div className="view-stack">
+      <div className="metric-row">
+        <article className="metric-card">
+          <p className="metric-label">Pendientes</p>
+          <p className="metric-value">{registros.length}</p>
+          <p className="metric-hint">Esperan tu aprobación</p>
+        </article>
+        <article className="metric-card metric-secondary">
+          <p className="metric-label">Acción</p>
+          <p className="metric-value-sm">Aprobar / Rechazar</p>
+          <p className="metric-hint">Cambia el estado en Appwrite y libera el ingreso</p>
+        </article>
+        <button type="button" className="action-button ghost" onClick={load} disabled={loading}>
+          {loading ? 'Actualizando…' : 'Refrescar'}
+        </button>
+      </div>
+
+      {feedback && <p className="banner banner-success">{feedback}</p>}
+      {error && <p className="banner banner-error">{error}</p>}
+
+      <article className="ds-panel">
+        <header className="panel-header">
+          <h2>Solicitudes en cola</h2>
+          <p>Tabla con todos los registros con estado <strong>PENDIENTE</strong>.</p>
+        </header>
+
+        {loading ? (
+          <p className="empty-state">Cargando solicitudes…</p>
+        ) : registros.length === 0 ? (
+          <p className="empty-state">No hay solicitudes pendientes en este momento.</p>
+        ) : (
+          <div className="table-wrap">
+            <table className="ds-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Correo</th>
+                  <th>Cédula</th>
+                  <th>Rol solicitado</th>
+                  <th>Fecha</th>
+                  <th aria-label="Acciones" />
+                </tr>
+              </thead>
+              <tbody>
+                {registros.map((perfil) => (
+                  <tr key={perfil.id}>
+                    <td>{perfil.nombre || '—'}</td>
+                    <td>{perfil.email || '—'}</td>
+                    <td className="mono">{perfil.cedula || '—'}</td>
+                    <td>
+                      <span className={`role-pill role-${(perfil.rolSolicitado || '').toLowerCase()}`}>
+                        {ROL_LABEL[perfil.rolSolicitado] || perfil.rolSolicitado || '—'}
+                      </span>
+                    </td>
+                    <td className="muted">{formatFecha(perfil.fechaSolicitud || perfil.fechaRegistro)}</td>
+                    <td className="actions-cell">
+                      <button
+                        type="button"
+                        className="action-button approve"
+                        disabled={actioningId === perfil.id}
+                        onClick={() => handleAprobar(perfil)}
+                      >
+                        {actioningId === perfil.id ? '…' : 'Aprobar'}
+                      </button>
+                      <button
+                        type="button"
+                        className="action-button reject"
+                        disabled={actioningId === perfil.id}
+                        onClick={() => openRechazo(perfil)}
+                      >
+                        Rechazar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </article>
+
+      {rechazo.open && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-card">
+            <h3>Rechazar solicitud</h3>
+            <p>Vas a rechazar la solicitud de <strong>{rechazo.nombre}</strong>. El usuario será eliminado de Appwrite.</p>
+            <label className="form-label" htmlFor="motivo-rechazo">Motivo</label>
+            <textarea
+              id="motivo-rechazo"
+              className="form-input"
+              rows={4}
+              value={rechazo.motivo}
+              onChange={(e) => setRechazo((prev) => ({ ...prev, motivo: e.target.value }))}
+              placeholder="Ej: cédula no encontrada en la base de la facultad."
+            />
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="action-button ghost"
+                onClick={() => setRechazo({ open: false, perfilId: null, nombre: '', motivo: '' })}
+                disabled={actioningId === rechazo.perfilId}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="action-button reject"
+                onClick={handleRechazar}
+                disabled={actioningId === rechazo.perfilId}
+              >
+                {actioningId === rechazo.perfilId ? 'Rechazando…' : 'Confirmar rechazo'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CsvView() {
+  const [file, setFile] = useState(null);
+  const [previewRows, setPreviewRows] = useState([]);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileChange = async (event) => {
+    const selected = event.target.files?.[0] || null;
+    setFile(selected);
+    setResult(null);
+    setError('');
+
+    if (!selected) {
+      setPreviewRows([]);
+      return;
+    }
+
+    try {
+      const content = await selected.text();
+      const lines = content.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+      if (lines.length <= 1) { setPreviewRows([]); return; }
+
+      const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
+      const idx = (name) => headers.indexOf(name);
+      const rows = lines.slice(1).map((line) => {
+        const cols = line.split(',').map((c) => c.trim());
+        return {
+          nombre: idx('nombre') >= 0 ? cols[idx('nombre')] : '',
+          cedula: idx('cedula') >= 0 ? cols[idx('cedula')] : '',
+          rolJugador: idx('rol_jugador') >= 0 ? cols[idx('rol_jugador')] : '',
+          codigoUniversitario: idx('codigo_universitario') >= 0 ? cols[idx('codigo_universitario')] : '',
+          semestre: idx('semestre') >= 0 ? cols[idx('semestre')] : '',
+        };
+      }).filter((r) => r.nombre || r.cedula);
+      setPreviewRows(rows);
+    } catch {
+      setPreviewRows([]);
+    }
+  };
+
+  const handleUpload = async (event) => {
+    event.preventDefault();
+    if (!file) {
+      setError('Selecciona un archivo CSV antes de enviar.');
+      return;
+    }
+    setUploading(true);
+    setError('');
+    setResult(null);
+    try {
+      const data = await uploadCsv(file, getToken());
+      setResult(data);
+    } catch (err) {
+      setError(err?.message || 'No fue posible cargar el CSV.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="view-stack">
+      <article className="ds-panel csv-drop-panel">
+        <header className="panel-header">
+          <h2>Subir archivo CSV</h2>
+          <p>Columnas esperadas: <code>nombre, cedula, rol_jugador, codigo_universitario, semestre</code>.</p>
+        </header>
+
+        <form onSubmit={handleUpload} className="csv-form">
+          <label className="csv-drop">
+            <input type="file" accept=".csv" onChange={handleFileChange} />
+            <span className="csv-drop-cta">
+              {file ? file.name : 'Selecciona o arrastra tu CSV aquí'}
+            </span>
+            <small>Formato .csv hasta unos pocos MB.</small>
+          </label>
+
+          <button className="action-button primary" type="submit" disabled={uploading || !file}>
+            {uploading ? 'Subiendo…' : 'Subir CSV'}
+          </button>
+        </form>
+
+        {error && <p className="banner banner-error">{error}</p>}
+
+        {result && (
+          <div className="result-grid">
+            <div className="result-tile">
+              <p className="result-label">Importados</p>
+              <p className="result-value approved">{result.importados ?? 0}</p>
+            </div>
+            <div className="result-tile">
+              <p className="result-label">Actualizados</p>
+              <p className="result-value">{result.actualizados ?? 0}</p>
+            </div>
+            <div className="result-tile">
+              <p className="result-label">Rechazados</p>
+              <p className="result-value rejected">{result.rechazados ?? 0}</p>
+            </div>
+          </div>
+        )}
+      </article>
+
+      <article className="ds-panel">
+        <header className="panel-header">
+          <h2>Vista previa</h2>
+          <p>{previewRows.length ? `${previewRows.length} filas detectadas en el archivo.` : 'Sube un CSV para ver sus filas aquí antes de enviarlas al backend.'}</p>
+        </header>
+
+        {previewRows.length > 0 && (
+          <div className="table-wrap">
+            <table className="ds-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Cédula</th>
+                  <th>Rol</th>
+                  <th>Código</th>
+                  <th>Semestre</th>
+                </tr>
+              </thead>
+              <tbody>
+                {previewRows.slice(0, 50).map((row, i) => (
+                  <tr key={`${row.cedula}-${i}`}>
+                    <td>{row.nombre || '—'}</td>
+                    <td className="mono">{row.cedula || '—'}</td>
+                    <td>{row.rolJugador || '—'}</td>
+                    <td>{row.codigoUniversitario || '—'}</td>
+                    <td>{row.semestre || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {previewRows.length > 50 && <p className="muted">Mostrando primeras 50 filas — el backend procesa el archivo completo.</p>}
+          </div>
+        )}
+      </article>
+    </div>
+  );
+}
+
+function BuscarJugadorView() {
+  const [cedula, setCedula] = useState('');
+  const [jugador, setJugador] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSearch = async (event) => {
+    event.preventDefault();
+    if (!cedula.trim()) return;
+    setLoading(true);
+    setError('');
+    setJugador(null);
+    try {
+      const data = await getJugadorByCedula(cedula.trim(), getToken());
+      setJugador(data);
+    } catch (err) {
+      setError(err?.message || 'No fue posible obtener el jugador.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const rolClase = useMemo(() => `role-${(jugador?.rolJugador || '').toLowerCase()}`, [jugador]);
+
+  return (
+    <div className="view-stack">
+      <article className="ds-panel">
+        <header className="panel-header">
+          <h2>Consulta de jugador</h2>
+          <p>Busca por cédula exacta. Esta consulta usa el mismo endpoint que el delegado.</p>
+        </header>
+
+        <form className="inline-search" onSubmit={handleSearch}>
+          <input
+            className="form-input"
+            type="text"
+            inputMode="numeric"
+            placeholder="Ej: 1090000001"
+            value={cedula}
+            onChange={(e) => setCedula(e.target.value)}
+            required
+          />
+          <button className="action-button primary" type="submit" disabled={loading}>
+            {loading ? 'Buscando…' : 'Buscar'}
+          </button>
+        </form>
+
+        {error && <p className="banner banner-error">{error}</p>}
+
+        {jugador && (
+          <div className="player-card">
+            <header className="player-card-header">
+              <span className={`role-pill ${rolClase}`}>{jugador.rolJugador || '—'}</span>
+              <span className={`status-pill ${jugador.activo ? 'on' : 'off'}`}>
+                {jugador.activo ? 'Activo' : 'Inactivo'}
+              </span>
+            </header>
+            <h3 className="player-name">{jugador.nombre || '—'}</h3>
+            <dl className="player-grid">
+              <div><dt>Cédula</dt><dd className="mono">{jugador.cedula || '—'}</dd></div>
+              <div><dt>Código universitario</dt><dd>{jugador.codigoUniversitario || '—'}</dd></div>
+              <div><dt>Semestre</dt><dd>{jugador.semestre ?? '—'}</dd></div>
+            </dl>
+          </div>
+        )}
+      </article>
+    </div>
+  );
+}
+
+function PlaceholderView() {
+  return (
+    <article className="ds-panel placeholder">
+      <h2>Módulo en construcción</h2>
+      <p>Esta sección ya tiene su lugar en la navegación. Su funcionalidad se libera en próximos sprints, sin afectar lo ya operativo.</p>
+    </article>
   );
 }
 

@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import '../styles/torneos.css';
 
@@ -29,6 +30,7 @@ const TORNEOS = [
     activo:  true,
     ganador: null,
     foto:    null,
+    href:    '/torneos/2026',
   },
   {
     year:    '2025',
@@ -48,9 +50,22 @@ const TORNEOS = [
   },
 ];
 
-function TorneoCard({ torneo }) {
+function TorneoCard({ torneo, onOpen }) {
+  const clickable = Boolean(onOpen);
   return (
-    <article className="hud-card">
+    <article
+      className="hud-card"
+      onClick={clickable ? onOpen : undefined}
+      onKeyDown={clickable ? (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen();
+        }
+      } : undefined}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      style={clickable ? { cursor: 'pointer' } : undefined}
+    >
       <div className="hud-glow" />
       <div className="corner-tr" />
       <div className="corner-bl" />
@@ -101,6 +116,7 @@ function TorneoCard({ torneo }) {
 }
 
 function Torneos() {
+  const navigate = useNavigate();
   return (
     <>
       <Navbar mode="public" />
@@ -113,7 +129,13 @@ function Torneos() {
 
         <section className="torneos-section">
           <div className="torneos-grid">
-            {TORNEOS.map((t) => <TorneoCard key={t.year} torneo={t} />)}
+            {TORNEOS.map((t) => (
+              <TorneoCard
+                key={t.year}
+                torneo={t}
+                onOpen={t.href ? () => navigate(t.href) : undefined}
+              />
+            ))}
           </div>
         </section>
 

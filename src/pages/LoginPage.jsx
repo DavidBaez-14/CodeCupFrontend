@@ -1,50 +1,87 @@
-import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
-import { login, startGoogleLogin } from '../api/auth';
-import { setSession } from '../utils/session';
+import { exchange } from '../api/auth';
+import { appwriteCreateJwt, appwriteLogin, appwriteLogout, appwriteOAuthGoogle } from '../lib/appwrite';
+import { pickPrimaryRole, setSession } from '../utils/session';
 import '../styles/login.css';
 
 const ROLE_ROUTE = {
   ADMINISTRADOR: '/dashboard/admin',
-  ARBITRO:       '/dashboard/arbitro',
-  DELEGADO:      '/dashboard/delegado',
+  ARBITRO: '/dashboard/arbitro',
+  DELEGADO: '/dashboard/delegado',
 };
 
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [correo,    setCorreo]    = useState('');
+  const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
-  const [error,     setError]     = useState('');
-  const [loading,   setLoading]   = useState(false);
-
-  useEffect(() => {
+  const [error, setError] = useState(() => {
     const params = new URLSearchParams(location.search);
-    const oauthError = params.get('oauthError');
-    if (oauthError) setError(oauthError);
-  }, [location.search]);
+    return params.get('oauthError') || '';
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleGoogle = async () => {
+    setError('');
+    try {
+      // Cierra cualquier sesión Appwrite previa para que el callback de Google sea limpio.
+      await appwriteLogout();
+      const origin = window.location.origin;
+      appwriteOAuthGoogle({
+        successUrl: `${origin}/oauth/callback`,
+        failureUrl: `${origin}/login?oauthError=${encodeURIComponent('No se pudo autenticar con Google.')}`,
+      });
+    } catch (err) {
+      setError(err?.message || 'No se pudo iniciar el login con Google.');
+    }
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
     setLoading(true);
+
     try {
-      const data = await login(correo, contrasena);
+      // 1. Cierra sesión previa de Appwrite por si quedó una colgada de otro usuario.
+      await appwriteLogout();
+
+      // 2. Login en Appwrite -> sesión activa de este usuario.
+      await appwriteLogin({ email: correo, password: contrasena });
+
+      // 3. JWT corto de Appwrite (~15 min) que el backend va a verificar.
+      const appwriteJwt = await appwriteCreateJwt();
+
+      // 4. Exchange contra el backend -> JWT propio + roles.
+      const data = await exchange(appwriteJwt);
+
+      const rolPrimario = pickPrimaryRole(data.roles);
       setSession({
-        token:                data.token,
-        rol:                  data.rol,
-        nombre:               data.nombre,
-        debeCambiarContrasena: data.debeCambiarContrasena,
+        token: data.token,
+        rol: rolPrimario,
+        nombre: data.nombre,
+        email: data.correo,
       });
-      navigate(
-        data.debeCambiarContrasena
-          ? '/cambiar-contrasena'
-          : (ROLE_ROUTE[data.rol] || '/login'),
-        { replace: true },
-      );
+
+      navigate(ROLE_ROUTE[rolPrimario] || '/login', { replace: true });
     } catch (requestError) {
-      setError(requestError.message || 'No fue posible iniciar sesión.');
+      const mensaje = requestError?.message || 'No fue posible iniciar sesión.';
+
+      // Si el perfil aún está pendiente, mandamos al usuario a la pantalla de espera.
+      if (/pendiente/i.test(mensaje)) {
+        navigate('/pending', { replace: true });
+        return;
+      }
+
+      // Si no está registrado en el backend, lo invitamos a completar el registro.
+      if (/no registrado/i.test(mensaje)) {
+        navigate('/signup', { replace: true, state: { hint: 'Completa tu registro.' } });
+        return;
+      }
+
+      setError(mensaje);
+      await appwriteLogout();
     } finally {
       setLoading(false);
     }
@@ -62,7 +99,6 @@ function LoginPage() {
 
         <div className="login-title">Bienvenido</div>
         <div className="login-sub">Ingresa con tu cuenta para gestionar el torneo</div>
-        <div className="login-hint">Primer ingreso: tu contraseña es tu cédula.</div>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -100,7 +136,7 @@ function LoginPage() {
 
         <div className="login-separator">— o —</div>
 
-        <button className="btn-google" type="button" onClick={startGoogleLogin}>
+        <button className="btn-google" type="button" onClick={handleGoogle}>
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" width="18" height="18">
             <path fill="#EA4335" d="M12 10.2v3.95h5.49c-.24 1.28-.97 2.37-2.06 3.1l3.33 2.58c1.94-1.79 3.06-4.43 3.06-7.58 0-.73-.07-1.44-.2-2.12H12Z" />
             <path fill="#34A853" d="M6.2 14.29 5.45 14l-2.66 2.07A9.97 9.97 0 0 0 12 22c2.7 0 4.96-.89 6.61-2.41l-3.33-2.58c-.92.62-2.1.99-3.28.99-2.59 0-4.78-1.75-5.56-4.11Z" />
@@ -109,6 +145,10 @@ function LoginPage() {
           </svg>
           Continuar con Google
         </button>
+
+        <Link to="/signup" className="btn-signup-link">
+          Crear cuenta nueva
+        </Link>
 
         <div className="login-back">
           <button type="button" onClick={() => navigate('/')}>← Volver al inicio</button>

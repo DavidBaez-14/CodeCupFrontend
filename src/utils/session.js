@@ -1,20 +1,20 @@
 const TOKEN_KEY = 'codecup_token';
 const ROL_KEY = 'codecup_rol';
 const NOMBRE_KEY = 'codecup_nombre';
-const MUST_CHANGE_PASSWORD_KEY = 'codecup_debe_cambiar_contrasena';
+const EMAIL_KEY = 'codecup_email';
 
-export function setSession({ token, rol, nombre, debeCambiarContrasena = false }) {
+export function setSession({ token, rol, nombre, email }) {
   localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(ROL_KEY, rol);
-  localStorage.setItem(NOMBRE_KEY, nombre);
-  localStorage.setItem(MUST_CHANGE_PASSWORD_KEY, String(Boolean(debeCambiarContrasena)));
+  localStorage.setItem(NOMBRE_KEY, nombre || '');
+  localStorage.setItem(EMAIL_KEY, email || '');
 }
 
 export function clearSession() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(ROL_KEY);
   localStorage.removeItem(NOMBRE_KEY);
-  localStorage.removeItem(MUST_CHANGE_PASSWORD_KEY);
+  localStorage.removeItem(EMAIL_KEY);
 }
 
 export function getToken() {
@@ -29,10 +29,17 @@ export function getNombre() {
   return localStorage.getItem(NOMBRE_KEY);
 }
 
-export function mustChangePassword() {
-  return localStorage.getItem(MUST_CHANGE_PASSWORD_KEY) === 'true';
+export function getEmail() {
+  return localStorage.getItem(EMAIL_KEY);
 }
 
 export function hasSession() {
   return Boolean(getToken());
+}
+
+export function pickPrimaryRole(roles) {
+  if (!Array.isArray(roles) || roles.length === 0) return null;
+  const order = ['administrador', 'arbitro', 'delegado'];
+  const found = order.find((r) => roles.map((x) => String(x).toLowerCase()).includes(r));
+  return (found || roles[0]).toUpperCase();
 }

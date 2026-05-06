@@ -1,270 +1,117 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
 import { getJugadorByCedula } from '../api/jugadores';
-import { clearSession, getNombre, getToken } from '../utils/session';
-import '../styles/dashboard.css';
-
-const TABS = [
-  { key: 'mi-equipo', label: 'Mi Equipo', icon: '🛡' },
-  { key: 'jugadores', label: 'Jugadores', icon: '👥' },
-  { key: 'pagos', label: 'Pagos', icon: '💳' },
-  { key: 'cronograma', label: 'Cronograma', icon: '📅' },
-  { key: 'perfil', label: 'Mi Perfil', icon: '👤' },
-];
-
-const RECENT_SEARCHES_KEY = 'delegado_jugadores_recent';
-
-function loadRecentJugadores() {
-  try {
-    const raw = window.localStorage.getItem(RECENT_SEARCHES_KEY);
-    if (!raw) {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function persistRecentJugadores(items) {
-  try {
-    window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(items));
-  } catch {
-    // Ignore storage failures and keep runtime state only.
-  }
-}
-
-function matchesNombreOCedula(jugador, buscar) {
-  const query = buscar.trim().toLowerCase();
-  if (!query) {
-    return true;
-  }
-
-  const nombre = (jugador?.nombre || '').toLowerCase();
-  const cedula = String(jugador?.cedula || '').toLowerCase();
-  return nombre.includes(query) || cedula.includes(query);
-}
-
-function isCedulaQuery(value) {
-  return /^\d+$/.test(value.trim());
-}
+import { appwriteLogout } from '../lib/appwrite';
+import { clearSession, getEmail, getNombre, getToken } from '../utils/session';
+import '../styles/admin.css';
+import '../styles/role-shell.css';
 
 function DelegadoDashboard() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('jugadores');
-  const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const nombre = getNombre() || 'Delegado';
+  const email = getEmail() || '';
+
+  const [cedula, setCedula] = useState('');
   const [jugador, setJugador] = useState(null);
-  const [recentJugadores, setRecentJugadores] = useState(loadRecentJugadores);
-  const [nameMatches, setNameMatches] = useState([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const consultasActivas = useMemo(
-    () => recentJugadores.filter((item) => item?.activo).length,
-    [recentJugadores],
-  );
-
-  const rolesUnicos = useMemo(() => {
-    const labels = recentJugadores
-      .map((item) => item?.rolJugador)
-      .filter(Boolean);
-    return new Set(labels).size;
-  }, [recentJugadores]);
-
-  const handleSaveRecent = (jugadorData) => {
-    setRecentJugadores((prev) => {
-      const withoutCurrent = prev.filter((item) => item.cedula !== jugadorData.cedula);
-      const next = [jugadorData, ...withoutCurrent].slice(0, 10);
-      persistRecentJugadores(next);
-      return next;
-    });
-  };
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
     clearSession();
+    await appwriteLogout();
     navigate('/');
   };
 
   const handleSearch = async (event) => {
     event.preventDefault();
-    const searchValue = query.trim();
-    if (!searchValue) {
-      setError('Escribe una cedula o nombre para buscar.');
-      return;
-    }
-
+    if (!cedula.trim()) return;
+    setLoading(true);
     setError('');
     setJugador(null);
-    setNameMatches([]);
-
-    if (!isCedulaQuery(searchValue)) {
-      const filtered = recentJugadores.filter((item) => matchesNombreOCedula(item, searchValue));
-      setNameMatches(filtered);
-
-      if (!filtered.length) {
-        setError('No hay coincidencias por nombre en consultas recientes. Consulta primero por cedula para ampliar la lista.');
-      } else {
-        setJugador(filtered[0]);
-      }
-
-      return;
-    }
-
-    setLoading(true);
-
     try {
-      const data = await getJugadorByCedula(searchValue, getToken());
+      const data = await getJugadorByCedula(cedula.trim(), getToken());
       setJugador(data);
-      setNameMatches([data]);
-      handleSaveRecent(data);
-    } catch (requestError) {
-      setError(requestError.message || 'No fue posible consultar la cedula.');
+    } catch (err) {
+      setError(err?.message || 'No fue posible obtener el jugador.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleQuickSelect = (item) => {
-    setQuery(item.nombre || String(item.cedula || ''));
-    setJugador(item);
-    setNameMatches([item]);
-    setError('');
-  };
-
   return (
-    <main className="delegado-layout delegado-layout-v2">
-      <header className="delegado-topbar delegado-topbar-v2">
-        <div className="delegado-brand-wrap">
-          <p className="delegado-brand">CODE-CUP</p>
-          <small>Panel del delegado</small>
+    <main className="role-shell">
+      <header className="role-topbar">
+        <div className="role-brand">
+          <img src={brandLogo} alt="" />
+          <div>
+            <p className="brand-title"><em>Code</em> Cup</p>
+            <p className="brand-sub">Panel de delegado</p>
+          </div>
         </div>
-        <nav className="delegado-tabs" aria-label="Navegacion delegado">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              className={`delegado-tab ${activeTab === tab.key ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.key)}
-            >
-              <span aria-hidden="true">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-        <div className="delegado-user-area">
-          <span>{getNombre() || 'Delegado'}</span>
-          <button className="nav-button danger" type="button" onClick={handleLogout}>Cerrar sesion</button>
+        <div className="role-user">
+          <div className="role-user-info">
+            <p className="user-name">{nombre}</p>
+            <small className="user-email">{email}</small>
+          </div>
+          <button className="logout-btn" type="button" onClick={handleLogout}>Cerrar sesión</button>
         </div>
       </header>
 
-      <section className="page delegado-content delegado-content-v2">
-        <section className="delegado-kpi-grid" aria-label="Resumen de actividad">
-          <article className="delegado-kpi-card">
-            <p>Consultas guardadas</p>
-            <strong>{recentJugadores.length}</strong>
-          </article>
-          <article className="delegado-kpi-card">
-            <p>Jugadores activos</p>
-            <strong>{consultasActivas}</strong>
-          </article>
-          <article className="delegado-kpi-card delegado-kpi-accent">
-            <p>Roles detectados</p>
-            <strong>{rolesUnicos}</strong>
-          </article>
-        </section>
+      <section className="role-content">
+        <article className="ds-panel welcome-panel">
+          <p className="role-tag">DELEGADO</p>
+          <h1>Hola, {nombre.split(' ')[0]}</h1>
+          <p>Aquí podrás verificar elegibilidad de jugadores y, en próximos sprints, gestionar tu equipo, pagos y cronograma.</p>
+        </article>
 
-        {activeTab === 'jugadores' ? (
-          <section className="delegado-jugadores-grid">
-            <article className="panel-card delegado-player-card delegado-search-card">
-              <h2>Busqueda por cedula o nombre</h2>
-              <p className="delegado-card-subtitle">
-                Busca por cedula exacta o por nombre dentro de consultas recientes, usando la misma regla de coincidencia nombre/cedula del dashboard admin.
-              </p>
+        <article className="ds-panel">
+          <header className="panel-header">
+            <h2>Verificar jugador</h2>
+            <p>Consulta por cédula a la base oficial de la facultad para confirmar elegibilidad.</p>
+          </header>
 
-              <form className="panel-form" onSubmit={handleSearch}>
-                <label htmlFor="jugador-busqueda">Nombre o cedula</label>
-                <input
-                  id="jugador-busqueda"
-                  type="text"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Ej: 1098765432 o Daniel"
-                  required
-                />
-                <button className="primary-button" type="submit" disabled={loading}>
-                  {loading ? 'Buscando...' : 'Buscar jugador'}
-                </button>
-              </form>
+          <form className="inline-search" onSubmit={handleSearch}>
+            <input
+              className="form-input"
+              type="text"
+              inputMode="numeric"
+              placeholder="Ej: 1090000001"
+              value={cedula}
+              onChange={(e) => setCedula(e.target.value)}
+              required
+            />
+            <button className="action-button primary" type="submit" disabled={loading}>
+              {loading ? 'Buscando…' : 'Buscar'}
+            </button>
+          </form>
 
-              {recentJugadores.length ? (
-                <div className="delegado-recent-wrap">
-                  <p>Consultas recientes</p>
-                  <div className="delegado-recent-chips">
-                    {recentJugadores.slice(0, 6).map((item) => (
-                      <button
-                        key={item.cedula}
-                        type="button"
-                        className="delegado-recent-chip"
-                        onClick={() => handleQuickSelect(item)}
-                      >
-                        {item.nombre}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
+          {error && <p className="banner banner-error">{error}</p>}
 
-              {nameMatches.length > 1 ? (
-                <div className="delegado-match-list">
-                  {nameMatches.map((item) => (
-                    <button
-                      key={`match-${item.cedula}`}
-                      type="button"
-                      className="delegado-match-item"
-                      onClick={() => handleQuickSelect(item)}
-                    >
-                      <strong>{item.nombre}</strong>
-                      <small>{item.cedula}</small>
-                    </button>
-                  ))}
-                </div>
-              ) : null}
+          {jugador && (
+            <div className="player-card">
+              <header className="player-card-header">
+                <span className={`role-pill role-${(jugador.rolJugador || '').toLowerCase()}`}>
+                  {jugador.rolJugador || '—'}
+                </span>
+                <span className={`status-pill ${jugador.activo ? 'on' : 'off'}`}>
+                  {jugador.activo ? 'Activo' : 'Inactivo'}
+                </span>
+              </header>
+              <h3 className="player-name">{jugador.nombre || '—'}</h3>
+              <dl className="player-grid">
+                <div><dt>Cédula</dt><dd className="mono">{jugador.cedula || '—'}</dd></div>
+                <div><dt>Código universitario</dt><dd>{jugador.codigoUniversitario || '—'}</dd></div>
+                <div><dt>Semestre</dt><dd>{jugador.semestre ?? '—'}</dd></div>
+              </dl>
+            </div>
+          )}
+        </article>
 
-              {error ? <p className="error-text">{error}</p> : null}
-            </article>
-
-            <article className="panel-card delegado-player-card delegado-result-card">
-              <h2>Ficha del jugador</h2>
-              <p className="delegado-card-subtitle">Resultado seleccionado</p>
-
-              {jugador ? (
-                <div className="player-result player-result-v2">
-                  <span className={`player-role role-${(jugador.rolJugador || '').toLowerCase()}`}>{jugador.rolJugador}</span>
-                  <h3>{jugador.nombre}</h3>
-                  <div className="delegado-result-grid">
-                    <p><strong>Cedula:</strong> {jugador.cedula}</p>
-                    <p><strong>Semestre:</strong> {jugador.semestre ?? 'No aplica'}</p>
-                    <p><strong>Codigo:</strong> {jugador.codigoUniversitario ?? 'No aplica'}</p>
-                    <p><strong>Estado:</strong> {jugador.activo ? 'Activo' : 'Inactivo'}</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="delegado-empty-result">
-                  <p>Sin resultados aun</p>
-                  <small>Realiza una busqueda para visualizar la ficha del jugador.</small>
-                </div>
-              )}
-            </article>
-          </section>
-        ) : (
-          <article className="panel-card placeholder-module delegado-placeholder">
-            <p className="placeholder-icon">📌</p>
-            <h2>{TABS.find((tab) => tab.key === activeTab)?.label}</h2>
-            <p>Modulo dinamico en preparacion para Sprint 2.</p>
-          </article>
-        )}
+        <article className="ds-panel placeholder">
+          <h2>Funcionalidades en construcción</h2>
+          <p>Mi Equipo, Pagos y Cronograma se habilitan en próximos sprints. La consulta de jugadores ya está operativa contra el backend.</p>
+        </article>
       </section>
     </main>
   );

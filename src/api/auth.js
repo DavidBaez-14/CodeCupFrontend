@@ -1,38 +1,24 @@
 import { requestJson } from './http';
 
-const BACKEND_ORIGIN = import.meta.env.VITE_BACKEND_ORIGIN || 'https://authcodecup-cykcc.ondigitalocean.app';
-
-export function login(correo, contrasena) {
-  return requestJson('/api/auth/login', {
+export function exchange(appwriteJwt) {
+  return requestJson('/api/auth/exchange', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ correo, contrasena }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ appwriteJwt }),
   });
 }
 
-export function startGoogleLogin() {
-  window.location.href = `${BACKEND_ORIGIN}/api/auth/google`;
-}
-
-export function recuperarContrasena(correo) {
-  return requestJson('/api/auth/recuperar-contrasena', {
+export function registrar({ appwriteJwt, cedula, rolSolicitado }) {
+  return requestJson('/api/auth/registrar', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ correo }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ appwriteJwt, cedula, rolSolicitado }),
   });
 }
 
-export function cambiarContrasena(token, contrasenaActual, contrasenaNueva) {
-  return requestJson('/api/auth/cambiar-contrasena', {
+export function refresh(token) {
+  return requestJson('/api/auth/refresh', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ contrasenaActual, contrasenaNueva }),
+    headers: { Authorization: `Bearer ${token}` },
   });
 }
