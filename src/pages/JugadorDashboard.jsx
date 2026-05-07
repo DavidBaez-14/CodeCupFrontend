@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
-import { getMiPerfil, listEquipos } from '../api/supercopa';
+import { getMiPerfil, getMisSolicitudes, listEquipos, listTorneos, solicitarIngreso } from '../api/supercopa';
 import { TEAM_COLORS } from '../data/supercopa';
 import { appwriteLogout } from '../lib/appwrite';
 import { clearSession, getEmail, getNombre, getToken } from '../utils/session';
@@ -33,10 +33,15 @@ function JugadorDashboard() {
   const [activeTab, setActiveTab] = useState('equipo');
   const [equipos, setEquipos] = useState([]);
   const [perfil, setPerfil] = useState(null);
+  const [torneos, setTorneos] = useState([]);
   const [loadingEquipos, setLoadingEquipos] = useState(false);
   const [loadingPerfil, setLoadingPerfil] = useState(false);
   const [errorEquipos, setErrorEquipos] = useState('');
   const [errorPerfil, setErrorPerfil] = useState('');
+  const [solicitudMsg, setSolicitudMsg] = useState('');
+  const [solicitudando, setSolicitudando] = useState(null);
+  // { [equipoId]: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' }
+  const [estadosSolicitud, setEstadosSolicitud] = useState({});
 
   const fallbackEquipos = useMemo(() => {
     return Object.keys(TEAM_COLORS).map((name) => ({ id: name, nombre: name }));
@@ -69,6 +74,46 @@ function JugadorDashboard() {
     loadEquipos();
     return () => { alive = false; };
   }, [fallbackEquipos, token]);
+
+  useEffect(() => {
+    let alive = true;
+    listTorneos(token)
+      .then((data) => { if (alive && Array.isArray(data)) setTorneos(data); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [token]);
+
+  useEffect(() => {
+    let alive = true;
+    getMisSolicitudes(token)
+      .then((data) => {
+        if (!alive || !Array.isArray(data)) return;
+        const map = {};
+        data.forEach((s) => { map[String(s.equipoId)] = s.estado; });
+        setEstadosSolicitud(map);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [token]);
+
+  const handleSolicitar = async (equipo) => {
+    const torneoId = torneos[0]?.id;
+    if (!torneoId) {
+      setSolicitudMsg('No hay torneos disponibles.');
+      return;
+    }
+    setSolicitudando(equipo.id);
+    setSolicitudMsg('');
+    try {
+      await solicitarIngreso(String(equipo.id), torneoId, token);
+      setEstadosSolicitud((prev) => ({ ...prev, [String(equipo.id)]: 'PENDIENTE' }));
+      setSolicitudMsg(`Solicitud enviada para ${equipo.nombre}. Espera aprobación del delegado.`);
+    } catch (err) {
+      setSolicitudMsg(err?.message || 'No se pudo enviar la solicitud.');
+    } finally {
+      setSolicitudando(null);
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -132,26 +177,62 @@ function JugadorDashboard() {
             </header>
 
             {errorEquipos && <p className="banner banner-error">{errorEquipos}</p>}
+            {solicitudMsg && (
+              <p className={`banner ${solicitudMsg.startsWith('Solicitud enviada') ? 'banner-success' : 'banner-error'}`}>
+                {solicitudMsg}
+              </p>
+            )}
             {loadingEquipos ? (
               <p className="empty-state">Cargando equipos…</p>
             ) : (
               <div className="equipo-grid">
-                {equipos.map((equipo) => (
-                  <div key={equipo.id} className="equipo-card">
-                    <span
-                      className="equipo-dot"
-                      style={{ backgroundColor: TEAM_COLORS[equipo.nombre] || '#3d4f80' }}
-                      aria-hidden="true"
-                    />
-                    <div className="equipo-info">
-                      <h3>{equipo.nombre}</h3>
-                      <p>Solicita tu cupo en este equipo.</p>
+                {equipos.map((equipo) => {
+                  const estado = estadosSolicitud[String(equipo.id)];
+                  const sending = solicitudando === equipo.id;
+                  const locked = estado === 'PENDIENTE' || estado === 'APROBADA';
+
+                  const btnLabel = sending ? 'Enviando…'
+                    : estado === 'APROBADA'  ? '✓ Aprobado'
+                    : estado === 'PENDIENTE' ? '⏳ Pendiente'
+                    : estado === 'RECHAZADA' ? 'Reintentar'
+                    : 'Solicitar ingreso';
+
+                  const subtext = estado === 'APROBADA'  ? 'Eres miembro de este equipo.'
+                    : estado === 'PENDIENTE' ? 'Solicitud pendiente de aprobación.'
+                    : estado === 'RECHAZADA' ? 'Tu solicitud fue rechazada.'
+                    : 'Solicita tu cupo en este equipo.';
+
+                  const btnStyle = estado === 'APROBADA'
+                    ? { borderColor: 'var(--color-success)', color: 'var(--color-success)' }
+                    : estado === 'PENDIENTE'
+                    ? { borderColor: 'var(--color-warning)', color: 'var(--color-warning)' }
+                    : estado === 'RECHAZADA'
+                    ? { borderColor: 'var(--color-error)', color: 'var(--color-error)' }
+                    : {};
+
+                  return (
+                    <div key={equipo.id} className="equipo-card">
+                      <span
+                        className="equipo-dot"
+                        style={{ backgroundColor: TEAM_COLORS[equipo.nombre] || '#3d4f80' }}
+                        aria-hidden="true"
+                      />
+                      <div className="equipo-info">
+                        <h3>{equipo.nombre}</h3>
+                        <p>{subtext}</p>
+                      </div>
+                      <button
+                        className="action-button ghost"
+                        type="button"
+                        style={btnStyle}
+                        disabled={sending || locked}
+                        onClick={() => handleSolicitar(equipo)}
+                      >
+                        {btnLabel}
+                      </button>
                     </div>
-                    <button className="action-button ghost" type="button" disabled>
-                      Solicitar ingreso
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </article>
@@ -169,6 +250,8 @@ function JugadorDashboard() {
               <p className="empty-state">Cargando tu perfil…</p>
             ) : perfil ? (
               <div className="perfil-stack">
+
+                {/* Resumen de estadísticas */}
                 <div className="perfil-summary">
                   <div>
                     <h3>{perfil.nombre || nombre}</h3>
@@ -178,49 +261,109 @@ function JugadorDashboard() {
                     <span>Partidos</span>
                     <strong>{perfil?.resumen?.partidosJugados ?? 0}</strong>
                   </div>
-                  <div className="perfil-metric">
+                  <div className="perfil-metric goles">
                     <span>Goles</span>
                     <strong>{perfil?.resumen?.goles ?? 0}</strong>
                   </div>
-                  <div className="perfil-metric">
-                    <span>Tarjetas</span>
-                    <strong>
-                      {(perfil?.resumen?.tarjetas?.amarillas ?? 0)
-                        + (perfil?.resumen?.tarjetas?.azules ?? 0)
-                        + (perfil?.resumen?.tarjetas?.rojas ?? 0)}
-                    </strong>
+                  <div className="perfil-metric amarilla">
+                    <span>Amarillas</span>
+                    <strong>{perfil?.resumen?.tarjetas?.amarillas ?? 0}</strong>
+                  </div>
+                  <div className="perfil-metric azul">
+                    <span>Azules</span>
+                    <strong>{perfil?.resumen?.tarjetas?.azules ?? 0}</strong>
+                  </div>
+                  <div className="perfil-metric roja">
+                    <span>Rojas</span>
+                    <strong>{perfil?.resumen?.tarjetas?.rojas ?? 0}</strong>
+                  </div>
+                  <div className="perfil-metric titulos">
+                    <span>Títulos</span>
+                    <strong>{perfil?.resumen?.titulos ?? 0}</strong>
                   </div>
                 </div>
 
+                {/* Equipos donde ha jugado */}
                 <div className="perfil-block">
-                  <h4>Equipos donde has jugado</h4>
+                  <h4>Equipos donde ha jugado</h4>
                   {perfil?.equipos?.length ? (
-                    <ul>
+                    <div>
                       {perfil.equipos.map((item, idx) => (
-                        <li key={`${item.nombre || item.id}-${idx}`}>
-                          {item.nombre || item.id}
-                        </li>
+                        <div key={`${item.id || item.nombre}-${idx}`} className="perfil-equipo-row">
+                          <span
+                            className="equipo-dot"
+                            style={{ backgroundColor: TEAM_COLORS[item.nombre] || '#3d4f80' }}
+                            aria-hidden="true"
+                          />
+                          <span className="perfil-equipo-nombre">{item.nombre}</span>
+                          <span className="perfil-equipo-fecha">
+                            {item.desde ?? '—'} → {item.hasta ?? 'Actual'}
+                          </span>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   ) : (
                     <p className="empty-state">Aún no hay equipos registrados.</p>
                   )}
                 </div>
 
-                <div className="perfil-block">
-                  <h4>Titulos</h4>
-                  {perfil?.titulos?.length ? (
-                    <ul>
+                {/* Títulos obtenidos */}
+                {perfil?.titulos?.length > 0 && (
+                  <div className="perfil-block">
+                    <h4>Títulos obtenidos</h4>
+                    <div>
                       {perfil.titulos.map((item, idx) => (
-                        <li key={`${item.torneo || item.equipo}-${idx}`}>
-                          {item.torneo || 'Torneo'} · {item.equipo || 'Equipo'} · {item.puesto || '—'}
-                        </li>
+                        <div key={`${item.torneo}-${idx}`} className="perfil-equipo-row">
+                          <span className="perfil-equipo-nombre">{item.torneo}</span>
+                          <span className="perfil-equipo-fecha">{item.equipo}</span>
+                          <span className={`puesto-badge ${item.puesto?.toLowerCase()}`}>
+                            {item.puesto}
+                          </span>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
+                  </div>
+                )}
+
+                {/* Historial de partidos */}
+                <div className="perfil-block">
+                  <h4>Partidos jugados</h4>
+                  {perfil?.partidos?.length ? (
+                    <div className="perfil-partidos-list">
+                      {perfil.partidos.map((p, idx) => (
+                        <div key={p.id || idx} className="perfil-partido-row">
+                          <span className="partido-fecha">
+                            {p.fecha
+                              ? new Date(p.fecha).toLocaleDateString('es-CO', {
+                                  day: '2-digit', month: 'short', year: 'numeric',
+                                })
+                              : '—'}
+                          </span>
+                          <div className="partido-equipos">
+                            <span>{p.equipo}</span>
+                            <span className="partido-rival"> vs </span>
+                            <span>{p.rival}</span>
+                          </div>
+                          <span className="partido-goles">{p.goles ?? 0} ⚽</span>
+                          {p.tarjetas?.length > 0 && (
+                            <div className="partido-tarjetas">
+                              {p.tarjetas.map((t, ti) => (
+                                <span
+                                  key={ti}
+                                  className={`tarjeta-badge ${t.toLowerCase()}`}
+                                  title={t}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   ) : (
-                    <p className="empty-state">Aún no hay titulos registrados.</p>
+                    <p className="empty-state">Aún no hay partidos registrados.</p>
                   )}
                 </div>
+
               </div>
             ) : (
               <p className="empty-state">No hay datos de perfil todavía.</p>
