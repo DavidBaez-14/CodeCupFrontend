@@ -1,10 +1,17 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
-import { registrar, registrarJugador } from '../api/auth';
+import { solicitarRol } from '../api/auth';
 import { appwriteCreateJwt, appwriteLogin, appwriteLogout, appwriteOAuthGoogle, appwriteSignup } from '../lib/appwrite';
 import { pickPrimaryRole, setSession } from '../utils/session';
 import '../styles/login.css';
+
+const ROLE_ROUTE = {
+  ADMINISTRADOR: '/dashboard/admin',
+  ARBITRO: '/dashboard/arbitro',
+  DELEGADO: '/dashboard/delegado',
+  JUGADOR: '/dashboard/jugador',
+};
 
 const TIPOS_CUENTA = [
   { value: 'JUGADOR', label: 'Jugador' },
@@ -34,6 +41,7 @@ function SignupPage() {
     rolJugador: 'ESTUDIANTE',
     codigoUniversitario: '',
     semestre: '',
+    motivoSolicitud: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -103,33 +111,38 @@ function SignupPage() {
       // 3. JWT corto que el backend va a verificar.
       const appwriteJwt = await appwriteCreateJwt();
 
-      if (form.tipoCuenta === 'JUGADOR') {
-        const data = await registrarJugador({
-          appwriteJwt,
-          cedula: form.cedula.trim(),
-          rolJugador: form.rolJugador,
-          codigoUniversitario: form.rolJugador === 'ESTUDIANTE' ? form.codigoUniversitario.trim() : null,
-          semestre: form.rolJugador === 'ESTUDIANTE' ? Number(form.semestre) : null,
-        });
-        const rolPrimario = pickPrimaryRole(data.roles);
+      // 4. Una sola ruta para todos los roles: el backend decide APROBADO /
+      //    PENDIENTE / PENDIENTE_VALIDACION según rol y padrón.
+      const data = await solicitarRol({
+        appwriteJwt,
+        cedula: form.cedula.trim(),
+        rol: form.tipoCuenta,
+        rolJugador: form.tipoCuenta === 'JUGADOR' ? form.rolJugador : undefined,
+        codigoUniversitario:
+          form.tipoCuenta === 'JUGADOR' && form.rolJugador === 'ESTUDIANTE'
+            ? form.codigoUniversitario.trim()
+            : null,
+        semestre:
+          form.tipoCuenta === 'JUGADOR' && form.rolJugador === 'ESTUDIANTE'
+            ? Number(form.semestre)
+            : null,
+        motivoSolicitud: form.motivoSolicitud.trim() || undefined,
+      });
+
+      if (data.estado === 'APROBADO' && data.token?.token) {
+        const rolPrimario = pickPrimaryRole(data.token.roles);
         setSession({
-          token: data.token,
+          token: data.token.token,
           rol: rolPrimario,
-          nombre: data.nombre,
-          email: data.correo,
+          nombre: data.token.nombre,
+          email: data.token.correo,
         });
-        navigate('/dashboard/jugador', { replace: true });
+        navigate(ROLE_ROUTE[rolPrimario] || '/dashboard/jugador', { replace: true });
         return;
       }
 
-      // 4. Crea el Perfil PENDIENTE en el backend (árbitro / delegado).
-      await registrar({
-        appwriteJwt,
-        cedula: form.cedula.trim(),
-        rolSolicitado: form.tipoCuenta,
-      });
-
-      navigate('/pending', { replace: true });
+      const reason = data.estado === 'PENDIENTE_VALIDACION' ? '?reason=validacion' : '';
+      navigate(`/pending${reason}`, { replace: true });
     } catch (requestError) {
       const mensaje = requestError?.message || 'No fue posible registrarse.';
       setError(mensaje);
@@ -270,6 +283,21 @@ function SignupPage() {
               </div>
             </div>
           )}
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="motivoSolicitud">
+              Comentario para el administrador (opcional)
+            </label>
+            <textarea
+              id="motivoSolicitud"
+              name="motivoSolicitud"
+              className="form-input"
+              rows={3}
+              placeholder="Explica tu situacion en caso de que creas que tú cédula podría no estar en la base de datos de jugadores. Ej: soy de Sistemas de la Unipamplona, me transferí este semestre."
+              value={form.motivoSolicitud}
+              onChange={handleChange}
+            />
+          </div>
 
           <div className="form-group">
             <label className="form-label" htmlFor="contrasena">Contraseña (mínimo 8 caracteres)</label>

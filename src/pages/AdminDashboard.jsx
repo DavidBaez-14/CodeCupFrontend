@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
-import { aprobarRegistro, listPendientes, rechazarRegistro } from '../api/registros';
+import { aprobarRol, listPendientes, rechazarRol } from '../api/registros';
 import { getJugadorByCedula, uploadCsv } from '../api/jugadores';
 import { appwriteLogout } from '../lib/appwrite';
 import { clearSession, getEmail, getNombre, getToken } from '../utils/session';
@@ -52,6 +52,12 @@ const ROL_LABEL = {
   ARBITRO: 'Árbitro',
   DELEGADO: 'Delegado',
   ADMINISTRADOR: 'Administrador',
+  JUGADOR: 'Jugador',
+};
+
+const ESTADO_LABEL = {
+  PENDIENTE: 'Pendiente',
+  PENDIENTE_VALIDACION: 'Validación manual',
 };
 
 function formatFecha(value) {
@@ -175,8 +181,8 @@ function PendientesView() {
     setError('');
     setFeedback('');
     try {
-      await aprobarRegistro(perfil.id, getToken());
-      setFeedback(`Solicitud de ${perfil.nombre || perfil.email} aprobada.`);
+      await aprobarRol(perfil.id, getToken());
+      setFeedback(`Solicitud de ${perfil.nombre || perfil.correo} aprobada.`);
       setRegistros((prev) => prev.filter((r) => r.id !== perfil.id));
     } catch (err) {
       setError(err?.message || 'No fue posible aprobar la solicitud.');
@@ -186,7 +192,7 @@ function PendientesView() {
   };
 
   const openRechazo = (perfil) => {
-    setRechazo({ open: true, perfilId: perfil.id, nombre: perfil.nombre || perfil.email, motivo: '' });
+    setRechazo({ open: true, perfilId: perfil.id, nombre: perfil.nombre || perfil.correo, motivo: '' });
   };
 
   const handleRechazar = async () => {
@@ -198,7 +204,7 @@ function PendientesView() {
     setError('');
     setFeedback('');
     try {
-      await rechazarRegistro(rechazo.perfilId, rechazo.motivo.trim(), getToken());
+      await rechazarRol(rechazo.perfilId, rechazo.motivo.trim(), getToken());
       setFeedback(`Solicitud de ${rechazo.nombre} rechazada.`);
       setRegistros((prev) => prev.filter((r) => r.id !== rechazo.perfilId));
       setRechazo({ open: false, perfilId: null, nombre: '', motivo: '' });
@@ -220,7 +226,7 @@ function PendientesView() {
         <article className="metric-card metric-secondary">
           <p className="metric-label">Acción</p>
           <p className="metric-value-sm">Aprobar / Rechazar</p>
-          <p className="metric-hint">Cambia el estado en Appwrite y libera el ingreso</p>
+          <p className="metric-hint">Aprobar agrega el rol y, si era validación manual, también lo agrega al padrón.</p>
         </article>
         <button type="button" className="action-button ghost" onClick={load} disabled={loading}>
           {loading ? 'Actualizando…' : 'Refrescar'}
@@ -248,7 +254,8 @@ function PendientesView() {
                   <th>Nombre</th>
                   <th>Correo</th>
                   <th>Cédula</th>
-                  <th>Rol solicitado</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
                   <th>Fecha</th>
                   <th aria-label="Acciones" />
                 </tr>
@@ -256,15 +263,27 @@ function PendientesView() {
               <tbody>
                 {registros.map((perfil) => (
                   <tr key={perfil.id}>
-                    <td>{perfil.nombre || '—'}</td>
-                    <td>{perfil.email || '—'}</td>
+                    <td>
+                      <div>{perfil.nombre || '—'}</div>
+                      {perfil.motivoSolicitud && (
+                        <small className="muted" title={perfil.motivoSolicitud}>
+                          “{perfil.motivoSolicitud}”
+                        </small>
+                      )}
+                    </td>
+                    <td>{perfil.correo || '—'}</td>
                     <td className="mono">{perfil.cedula || '—'}</td>
                     <td>
-                      <span className={`role-pill role-${(perfil.rolSolicitado || '').toLowerCase()}`}>
-                        {ROL_LABEL[perfil.rolSolicitado] || perfil.rolSolicitado || '—'}
+                      <span className={`role-pill role-${(perfil.rol || '').toLowerCase()}`}>
+                        {ROL_LABEL[perfil.rol] || perfil.rol || '—'}
                       </span>
                     </td>
-                    <td className="muted">{formatFecha(perfil.fechaSolicitud || perfil.fechaRegistro)}</td>
+                    <td>
+                      <span className={`role-pill role-${(perfil.estado || '').toLowerCase()}`}>
+                        {ESTADO_LABEL[perfil.estado] || perfil.estado || '—'}
+                      </span>
+                    </td>
+                    <td className="muted">{formatFecha(perfil.fechaSolicitud)}</td>
                     <td className="actions-cell">
                       <button
                         type="button"
@@ -295,7 +314,7 @@ function PendientesView() {
         <div className="modal-backdrop" role="dialog" aria-modal="true">
           <div className="modal-card">
             <h3>Rechazar solicitud</h3>
-            <p>Vas a rechazar la solicitud de <strong>{rechazo.nombre}</strong>. El usuario será eliminado de Appwrite.</p>
+            <p>Vas a rechazar la solicitud de <strong>{rechazo.nombre}</strong>. La cuenta de Appwrite no se elimina; si la persona tiene otros roles aprobados, los conserva.</p>
             <label className="form-label" htmlFor="motivo-rechazo">Motivo</label>
             <textarea
               id="motivo-rechazo"

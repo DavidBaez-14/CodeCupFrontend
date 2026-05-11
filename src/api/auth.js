@@ -8,24 +8,26 @@ export function exchange(appwriteJwt) {
   });
 }
 
-export function registrar({ appwriteJwt, cedula, rolSolicitado }) {
-  return requestJson('/api/auth/registrar', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ appwriteJwt, cedula, rolSolicitado }),
-  });
-}
-
-export function registrarJugador({ appwriteJwt, cedula, rolJugador, codigoUniversitario, semestre }) {
-  return requestJson('/api/auth/registrar-jugador', {
+export function solicitarRol({
+  appwriteJwt,
+  cedula,
+  rol,
+  rolJugador,
+  codigoUniversitario,
+  semestre,
+  motivoSolicitud,
+}) {
+  return requestJson('/api/auth/solicitar-rol', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       appwriteJwt,
       cedula,
+      rol,
       rolJugador,
       codigoUniversitario,
       semestre,
+      motivoSolicitud,
     }),
   });
 }

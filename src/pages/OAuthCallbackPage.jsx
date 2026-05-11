@@ -45,15 +45,17 @@ function OAuthCallbackPage() {
         if (cancelled) return;
         const mensaje = err?.message || 'No fue posible completar el login con Google.';
 
-        if (/pendiente/i.test(mensaje)) {
+        // Cuenta existe pero todos sus roles están PENDIENTE / PENDIENTE_VALIDACION
+        // → backend tira "Cuenta sin roles aprobados" o "...pendiente...".
+        if (/pendiente/i.test(mensaje) || /sin roles/i.test(mensaje)) {
           navigate('/pending', { replace: true });
           return;
         }
-        // Usuario nuevo en Google: sin labels → el backend lanza "Usuario sin rol asignado."
-        // O un usuario que aún no completó su perfil → "no registrado" / "Perfil no registrado".
+        // Primera vez por Google: la sesión Appwrite ya existe pero no hay Cuenta en DB
+        // → backend tira "Cuenta no registrada" (también legacy "sin rol asignado" / "Perfil no registrado").
         if (
           /sin rol asignado/i.test(mensaje) ||
-          /no registrado/i.test(mensaje) ||
+          /no registrad[ao]/i.test(mensaje) ||
           /perfil no registrado/i.test(mensaje)
         ) {
           const params = new URLSearchParams(location.search);

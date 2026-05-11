@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
 import { appwriteLogout } from '../lib/appwrite';
 import { clearSession } from '../utils/session';
@@ -6,6 +6,9 @@ import '../styles/login.css';
 
 function PendingApprovalPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const reason = searchParams.get('reason');
+  const esValidacionManual = reason === 'validacion';
 
   const handleLogout = async () => {
     clearSession();
@@ -24,12 +27,18 @@ function PendingApprovalPage() {
         </div>
 
         <div className="pending-icon" aria-hidden="true">⏳</div>
-        <div className="login-title">Solicitud en revisión</div>
+        <div className="login-title">
+          {esValidacionManual ? 'Validación manual pendiente' : 'Solicitud en revisión'}
+        </div>
         <p className="pending-text">
-          Tu cuenta fue creada con éxito. Un administrador debe aprobarla antes de que puedas acceder al sistema.
+          {esValidacionManual
+            ? 'Tu cédula no aparece en el padrón de Sistemas. Un administrador revisará tu caso manualmente y, si corresponde, te habilitará como jugador.'
+            : 'Tu cuenta fue creada con éxito. Un administrador debe aprobarla antes de que puedas acceder al sistema.'}
         </p>
         <p className="pending-text-muted">
-          Te avisaremos al correo registrado cuando tu cuenta esté lista. Puedes intentar iniciar sesión más tarde.
+          {esValidacionManual
+            ? 'Mientras tanto puedes cerrar sesión. Cuando el admin te valide, podrás volver a entrar normalmente.'
+            : 'Te avisaremos al correo registrado cuando tu cuenta esté lista. Puedes intentar iniciar sesión más tarde.'}
         </p>
 
         <button className="btn-login-submit" type="button" onClick={handleLogout}>

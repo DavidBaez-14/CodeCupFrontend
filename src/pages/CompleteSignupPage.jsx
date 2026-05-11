@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
-import { registrar, registrarJugador } from '../api/auth';
+import { solicitarRol } from '../api/auth';
 import { appwriteCreateJwt, appwriteCurrentUser, appwriteLogout } from '../lib/appwrite';
 import { pickPrimaryRole, setSession } from '../utils/session';
 import '../styles/login.css';
+
+const ROLE_ROUTE = {
+  ADMINISTRADOR: '/dashboard/admin',
+  ARBITRO: '/dashboard/arbitro',
+  DELEGADO: '/dashboard/delegado',
+  JUGADOR: '/dashboard/jugador',
+};
 
 const TIPOS_CUENTA = [
   { value: 'JUGADOR', label: 'Jugador' },
@@ -28,6 +35,7 @@ function CompleteSignupPage() {
   const [rolJugador, setRolJugador] = useState('ESTUDIANTE');
   const [codigoUniversitario, setCodigoUniversitario] = useState('');
   const [semestre, setSemestre] = useState('');
+  const [motivoSolicitud, setMotivoSolicitud] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -69,31 +77,36 @@ function CompleteSignupPage() {
     setLoading(true);
     try {
       const appwriteJwt = await appwriteCreateJwt();
-      if (tipoCuenta === 'JUGADOR') {
-        const data = await registrarJugador({
-          appwriteJwt,
-          cedula: cedula.trim(),
-          rolJugador,
-          codigoUniversitario: rolJugador === 'ESTUDIANTE' ? codigoUniversitario.trim() : null,
-          semestre: rolJugador === 'ESTUDIANTE' ? Number(semestre) : null,
-        });
-        const rolPrimario = pickPrimaryRole(data.roles);
+      const data = await solicitarRol({
+        appwriteJwt,
+        cedula: cedula.trim(),
+        rol: tipoCuenta,
+        rolJugador: tipoCuenta === 'JUGADOR' ? rolJugador : undefined,
+        codigoUniversitario:
+          tipoCuenta === 'JUGADOR' && rolJugador === 'ESTUDIANTE'
+            ? codigoUniversitario.trim()
+            : null,
+        semestre:
+          tipoCuenta === 'JUGADOR' && rolJugador === 'ESTUDIANTE'
+            ? Number(semestre)
+            : null,
+        motivoSolicitud: motivoSolicitud.trim() || undefined,
+      });
+
+      if (data.estado === 'APROBADO' && data.token?.token) {
+        const rolPrimario = pickPrimaryRole(data.token.roles);
         setSession({
-          token: data.token,
+          token: data.token.token,
           rol: rolPrimario,
-          nombre: data.nombre,
-          email: data.correo,
+          nombre: data.token.nombre,
+          email: data.token.correo,
         });
-        navigate('/dashboard/jugador', { replace: true });
+        navigate(ROLE_ROUTE[rolPrimario] || '/dashboard/jugador', { replace: true });
         return;
       }
 
-      await registrar({
-        appwriteJwt,
-        cedula: cedula.trim(),
-        rolSolicitado: tipoCuenta,
-      });
-      navigate('/pending', { replace: true });
+      const reason = data.estado === 'PENDIENTE_VALIDACION' ? '?reason=validacion' : '';
+      navigate(`/pending${reason}`, { replace: true });
     } catch (err) {
       setError(err?.message || 'No fue posible completar el registro.');
     } finally {
@@ -202,6 +215,20 @@ function CompleteSignupPage() {
               </div>
             </div>
           )}
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="motivoSolicitud">
+              Comentario para el administrador (opcional)
+            </label>
+            <textarea
+              id="motivoSolicitud"
+              className="form-input"
+              rows={3}
+              placeholder="Útil si tu cédula podría no estar en el padrón. Ej: soy de Sistemas, transferido este semestre."
+              value={motivoSolicitud}
+              onChange={(e) => setMotivoSolicitud(e.target.value)}
+            />
+          </div>
 
           <button className="btn-login-submit" type="submit" disabled={loading}>
             {loading ? 'Enviando solicitud…' : 'Enviar solicitud'}

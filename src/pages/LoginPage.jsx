@@ -69,14 +69,14 @@ function LoginPage() {
     } catch (requestError) {
       const mensaje = requestError?.message || 'No fue posible iniciar sesión.';
 
-      // Si el perfil aún está pendiente, mandamos al usuario a la pantalla de espera.
-      if (/pendiente/i.test(mensaje)) {
+      // Si la cuenta existe pero ningún rol está aprobado todavía, a la pantalla de espera.
+      if (/pendiente/i.test(mensaje) || /sin roles/i.test(mensaje)) {
         navigate('/pending', { replace: true });
         return;
       }
 
-      // Si no está registrado en el backend, lo invitamos a completar el registro.
-      if (/no registrado/i.test(mensaje)) {
+      // Si no está registrada en el backend, lo invitamos a completar el registro.
+      if (/no registrad[ao]/i.test(mensaje)) {
         navigate('/signup', { replace: true, state: { hint: 'Completa tu registro.' } });
         return;
       }
