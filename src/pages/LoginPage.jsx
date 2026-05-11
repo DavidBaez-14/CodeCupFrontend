@@ -3,7 +3,15 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
 import { exchange } from '../api/auth';
 import { appwriteCreateJwt, appwriteLogin, appwriteLogout, appwriteOAuthGoogle } from '../lib/appwrite';
-import { pickPrimaryRole, setSession } from '../utils/session';
+import {
+  clearLoginRole,
+  getLoginRole,
+  hasRole,
+  normalizeRole,
+  pickPrimaryRole,
+  setLoginRole,
+  setSession,
+} from '../utils/session';
 import '../styles/login.css';
 
 const ROLE_ROUTE = {
@@ -13,9 +21,92 @@ const ROLE_ROUTE = {
   JUGADOR: '/dashboard/jugador',
 };
 
+const DEFAULT_ROLE = 'JUGADOR';
+
+const ROLE_OPTIONS = [
+  {
+    value: 'JUGADOR',
+    label: 'Jugador',
+    caption: 'Cancha, perfil y estadisticas',
+  },
+  {
+    value: 'DELEGADO',
+    label: 'Delegado',
+    caption: 'Equipo y gestion de inscripcion',
+  },
+  {
+    value: 'ARBITRO',
+    label: 'Arbitro',
+    caption: 'Partidos, resultados y reglamento',
+  },
+  {
+    value: 'ADMINISTRADOR',
+    label: 'Administrador',
+    caption: 'Aprobaciones y control general',
+  },
+];
+
+const ROLE_ICONS = {
+  JUGADOR: (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="8" r="4.2" fill="currentColor" opacity="0.85" />
+      <path
+        d="M5.2 20.2c.6-3.5 3.4-6 6.8-6s6.1 2.5 6.8 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  ),
+  DELEGADO: (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M6 4h12v8a6 6 0 0 1-12 0V4Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M9 11h6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  ),
+  ARBITRO: (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="4" y="6" width="12" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
+      <circle cx="18.2" cy="12" r="2.2" fill="currentColor" />
+      <path d="M8 10h4M8 14h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  ),
+  ADMINISTRADOR: (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M12 3l7 3v5c0 4.4-3 8.4-7 10-4-1.6-7-5.6-7-10V6l7-3Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M12 8.5l1.1 2.2 2.5.4-1.8 1.7.4 2.5-2.2-1.1-2.2 1.1.4-2.5-1.8-1.7 2.5-.4L12 8.5Z"
+        fill="currentColor"
+        opacity="0.85"
+      />
+    </svg>
+  ),
+};
+
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const initialRole = normalizeRole(getLoginRole() || DEFAULT_ROLE);
+  const safeInitialRole = ROLE_OPTIONS.some((opt) => opt.value === initialRole)
+    ? initialRole
+    : DEFAULT_ROLE;
+  const [selectedRole, setSelectedRole] = useState(safeInitialRole);
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [error, setError] = useState(() => {
@@ -28,6 +119,7 @@ function LoginPage() {
     setError('');
     try {
       // Cierra cualquier sesión Appwrite previa para que el callback de Google sea limpio.
+      setLoginRole(selectedRole);
       await appwriteLogout();
       const origin = window.location.origin;
       appwriteOAuthGoogle({
@@ -56,13 +148,28 @@ function LoginPage() {
 
       // 4. Exchange contra el backend -> JWT propio + roles.
       const data = await exchange(appwriteJwt);
+      const rolPreferido = normalizeRole(selectedRole || DEFAULT_ROLE);
+      const tieneRol = hasRole(data.roles, rolPreferido);
 
-      const rolPrimario = pickPrimaryRole(data.roles);
+      if (!tieneRol) {
+        if (rolPreferido === 'ADMINISTRADOR') {
+          setError('Cuenta no registrada para Administrador.');
+          await appwriteLogout();
+          clearLoginRole();
+          return;
+        }
+        navigate(`/complete-signup?tipo=${encodeURIComponent(rolPreferido)}`, { replace: true });
+        return;
+      }
+
+      const rolPrimario = rolPreferido || pickPrimaryRole(data.roles);
       setSession({
         token: data.token,
         rol: rolPrimario,
         nombre: data.nombre,
         email: data.correo,
+        cedula: data.cedula,
+        roles: data.roles,
       });
 
       navigate(ROLE_ROUTE[rolPrimario] || '/login', { replace: true });
@@ -150,6 +257,25 @@ function LoginPage() {
         <Link to="/signup" className="btn-signup-link">
           Crear cuenta nueva
         </Link>
+
+        <div className="role-icons" role="group" aria-label="Selecciona tu rol">
+          {ROLE_OPTIONS.map((role) => (
+            <button
+              key={role.value}
+              type="button"
+              aria-label={role.label}
+              title={role.label}
+              data-label={role.label}
+              className={`role-icon-button ${selectedRole === role.value ? 'is-active' : ''}`}
+              onClick={() => {
+                setSelectedRole(role.value);
+                setLoginRole(role.value);
+              }}
+            >
+              {ROLE_ICONS[role.value]}
+            </button>
+          ))}
+        </div>
 
         <div className="login-back">
           <button type="button" onClick={() => navigate('/')}>← Volver al inicio</button>

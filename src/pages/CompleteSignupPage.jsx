@@ -100,6 +100,8 @@ function CompleteSignupPage() {
           rol: rolPrimario,
           nombre: data.token.nombre,
           email: data.token.correo,
+          cedula: data.token.cedula,
+          roles: data.token.roles,
         });
         navigate(ROLE_ROUTE[rolPrimario] || '/dashboard/jugador', { replace: true });
         return;

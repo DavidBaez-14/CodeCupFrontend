@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
+import RoleHeaderActions from '../components/RoleHeaderActions';
 import { aprobarRol, listPendientes, rechazarRol } from '../api/registros';
 import { getJugadorByCedula, uploadCsv } from '../api/jugadores';
 import { appwriteLogout } from '../lib/appwrite';
@@ -140,6 +141,7 @@ function AdminDashboard() {
             <p className="crumb">Dashboard / Identidad</p>
             <h1>{VIEW_LABEL[activeView] || 'Módulo en construcción'}</h1>
           </div>
+          <RoleHeaderActions allowRoleRequest={false} />
         </header>
 
         {activeView === 'pendientes' && <PendientesView />}

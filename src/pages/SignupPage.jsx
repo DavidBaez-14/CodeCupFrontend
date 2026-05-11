@@ -99,11 +99,19 @@ function SignupPage() {
       await appwriteLogout();
 
       // 1. Crea el usuario en Appwrite. Sin labels: queda sin rol hasta que el admin apruebe.
-      await appwriteSignup({
-        email: form.correo,
-        password: form.contrasena,
-        name: form.nombre,
-      });
+      try {
+        await appwriteSignup({
+          email: form.correo,
+          password: form.contrasena,
+          name: form.nombre,
+        });
+      } catch (signupError) {
+        const mensaje = String(signupError?.message || '').toLowerCase();
+        const esConflicto = signupError?.code === 409 || mensaje.includes('already') || mensaje.includes('exists');
+        if (!esConflicto) {
+          throw signupError;
+        }
+      }
 
       // 2. Inicia sesión inmediatamente para poder generar un JWT.
       await appwriteLogin({ email: form.correo, password: form.contrasena });
@@ -136,6 +144,8 @@ function SignupPage() {
           rol: rolPrimario,
           nombre: data.token.nombre,
           email: data.token.correo,
+          cedula: data.token.cedula,
+          roles: data.token.roles,
         });
         navigate(ROLE_ROUTE[rolPrimario] || '/dashboard/jugador', { replace: true });
         return;

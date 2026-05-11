@@ -1,14 +1,14 @@
 import { useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
+import RoleHeaderActions from '../components/RoleHeaderActions';
 import { appwriteLogout } from '../lib/appwrite';
-import { clearSession, getEmail, getNombre } from '../utils/session';
+import { clearSession, getNombre } from '../utils/session';
 import '../styles/admin.css';
 import '../styles/role-shell.css';
 
 function ArbitroDashboard() {
   const navigate = useNavigate();
   const nombre = getNombre() || 'Árbitro';
-  const email = getEmail() || '';
 
   const handleLogout = async () => {
     clearSession();
@@ -27,10 +27,7 @@ function ArbitroDashboard() {
           </div>
         </div>
         <div className="role-user">
-          <div className="role-user-info">
-            <p className="user-name">{nombre}</p>
-            <small className="user-email">{email}</small>
-          </div>
+          <RoleHeaderActions allowRoleRequest />
           <button className="logout-btn" type="button" onClick={handleLogout}>Cerrar sesión</button>
         </div>
       </header>

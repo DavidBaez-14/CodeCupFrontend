@@ -1,0 +1,105 @@
+.role-switcher {
+  border-color: var(--color-border);
+}
+
+.role-switcher-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.role-switcher-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.role-switcher-pill {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  color: var(--color-fg-muted);
+  border-radius: var(--radius-full);
+  padding: 6px 14px;
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+
+.role-switcher-pill:hover {
+  color: var(--color-fg);
+  border-color: var(--color-brand);
+  box-shadow: var(--glow-brand-sm);
+}
+
+.role-switcher-pill.active {
+  color: var(--color-fg);
+  background: var(--color-brand-subtle);
+  border-color: var(--color-brand);
+  box-shadow: var(--glow-brand-sm);
+}
+
+.role-switcher-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.role-switcher-note {
+  margin: var(--space-3) 0 0;
+  color: var(--color-fg-subtle);
+  font-size: var(--text-sm);
+}
+
+.role-request-form {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.role-request-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
+}
+
+.role-request-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.role-form-label {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--color-fg-subtle);
+}
+
+.role-request-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .role-switcher-row {
+    align-items: flex-start;
+  }
+
+  .role-request-actions {
+    justify-content: stretch;
+  }
+
+  .role-request-actions .action-button {
+    width: 100%;
+  }
+}

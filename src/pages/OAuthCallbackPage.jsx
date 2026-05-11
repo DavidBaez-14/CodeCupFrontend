@@ -3,7 +3,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
 import { exchange } from '../api/auth';
 import { appwriteCreateJwt, appwriteCurrentUser, appwriteLogout } from '../lib/appwrite';
-import { pickPrimaryRole, setSession } from '../utils/session';
+import {
+  clearLoginRole,
+  getLoginRole,
+  hasRole,
+  normalizeRole,
+  pickPrimaryRole,
+  setSession,
+} from '../utils/session';
 import '../styles/login.css';
 
 const ROLE_ROUTE = {
@@ -12,6 +19,8 @@ const ROLE_ROUTE = {
   DELEGADO: '/dashboard/delegado',
   JUGADOR: '/dashboard/jugador',
 };
+
+const DEFAULT_ROLE = 'JUGADOR';
 
 function OAuthCallbackPage() {
   const navigate = useNavigate();
@@ -32,14 +41,32 @@ function OAuthCallbackPage() {
         const appwriteJwt = await appwriteCreateJwt();
         const data = await exchange(appwriteJwt);
         if (cancelled) return;
+        const rolPreferido = normalizeRole(getLoginRole() || DEFAULT_ROLE);
+        const tieneRol = hasRole(data.roles, rolPreferido);
 
-        const rolPrimario = pickPrimaryRole(data.roles);
+        if (!tieneRol) {
+          clearLoginRole();
+          if (rolPreferido === 'ADMINISTRADOR') {
+            navigate(
+              `/login?oauthError=${encodeURIComponent('Cuenta no registrada para Administrador.')}`,
+              { replace: true },
+            );
+            return;
+          }
+          navigate(`/complete-signup?tipo=${encodeURIComponent(rolPreferido)}`, { replace: true });
+          return;
+        }
+
+        const rolPrimario = rolPreferido || pickPrimaryRole(data.roles);
         setSession({
           token: data.token,
           rol: rolPrimario,
           nombre: data.nombre,
           email: data.correo,
+          cedula: data.cedula,
+          roles: data.roles,
         });
+        clearLoginRole();
         navigate(ROLE_ROUTE[rolPrimario] || '/login', { replace: true });
       } catch (err) {
         if (cancelled) return;
@@ -58,6 +85,7 @@ function OAuthCallbackPage() {
           /no registrad[ao]/i.test(mensaje) ||
           /perfil no registrado/i.test(mensaje)
         ) {
+          clearLoginRole();
           const params = new URLSearchParams(location.search);
           const tipo = params.get('tipo');
           const destino = tipo ? `/complete-signup?tipo=${encodeURIComponent(tipo)}` : '/complete-signup';

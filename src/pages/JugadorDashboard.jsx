@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
+import RoleHeaderActions from '../components/RoleHeaderActions';
 import { getMiPerfil, getMisSolicitudes, listEquipos, listTorneos, solicitarIngreso } from '../api/supercopa';
 import { TEAM_COLORS } from '../data/supercopa';
 import { appwriteLogout } from '../lib/appwrite';
-import { clearSession, getEmail, getNombre, getToken } from '../utils/session';
+import { clearSession, getNombre, getToken } from '../utils/session';
 import '../styles/admin.css';
 import '../styles/role-shell.css';
 import '../styles/jugador.css';
@@ -27,7 +28,6 @@ function normalizeEquipos(data) {
 function JugadorDashboard() {
   const navigate = useNavigate();
   const nombre = getNombre() || 'Jugador';
-  const email = getEmail() || '';
   const token = getToken();
 
   const [activeTab, setActiveTab] = useState('equipo');
@@ -160,10 +160,7 @@ function JugadorDashboard() {
         </nav>
 
         <div className="role-user">
-          <div className="role-user-info">
-            <p className="user-name">{nombre}</p>
-            <small className="user-email">{email}</small>
-          </div>
+          <RoleHeaderActions allowRoleRequest />
           <button className="logout-btn" type="button" onClick={handleLogout}>Cerrar sesión</button>
         </div>
       </header>

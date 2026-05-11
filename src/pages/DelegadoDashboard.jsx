@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
+import RoleHeaderActions from '../components/RoleHeaderActions';
 import { getJugadorByCedula } from '../api/jugadores';
 import { aprobarSolicitud, listSolicitudesPendientes, rechazarSolicitud } from '../api/supercopa';
 import { appwriteLogout } from '../lib/appwrite';
-import { clearSession, getEmail, getNombre, getToken } from '../utils/session';
+import { clearSession, getNombre, getToken } from '../utils/session';
 import '../styles/admin.css';
 import '../styles/role-shell.css';
 
@@ -28,7 +29,6 @@ function formatFecha(value) {
 function DelegadoDashboard() {
   const navigate = useNavigate();
   const nombre = getNombre() || 'Delegado';
-  const email = getEmail() || '';
   const token = getToken();
 
   const [cedula, setCedula] = useState('');
@@ -137,10 +137,7 @@ function DelegadoDashboard() {
           </div>
         </div>
         <div className="role-user">
-          <div className="role-user-info">
-            <p className="user-name">{nombre}</p>
-            <small className="user-email">{email}</small>
-          </div>
+          <RoleHeaderActions allowRoleRequest />
           <button className="logout-btn" type="button" onClick={handleLogout}>Cerrar sesión</button>
         </div>
       </header>
