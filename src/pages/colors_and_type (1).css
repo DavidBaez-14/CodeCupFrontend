@@ -1,0 +1,238 @@
+/* ============================================================
+   CODE CUP — Design Tokens
+   Universidad Francisco de Paula Santander · Cúcuta
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Barlow:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+/* ── Raw Palette ───────────────────────────────────────────── */
+:root {
+  /* Orange scale */
+  --orange-50:  #fff4ed;
+  --orange-100: #ffe4cc;
+  --orange-200: #ffc490;
+  --orange-300: #ff9d52;
+  --orange-400: #ff7520;
+  --orange-500: #ff5500;   /* Brand primary */
+  --orange-600: #e04400;
+  --orange-700: #b33500;
+  --orange-800: #8a2800;
+  --orange-900: #5c1a00;
+
+  /* Dark Navy / Black scale */
+  --navy-50:  #f0f1f5;
+  --navy-100: #d5d8e8;
+  --navy-200: #9fa8c8;
+  --navy-300: #6878a8;
+  --navy-400: #3d4f80;
+  --navy-500: #1e2d5a;
+  --navy-600: #151f3f;
+  --navy-700: #0d1429;
+  --navy-800: #090e1c;   /* Near-black with blue tint */
+  --navy-900: #04070f;   /* Deepest dark */
+
+  /* Blue scale (accent/secondary) */
+  --blue-50:  #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-200: #93c5fd;
+  --blue-300: #60a5fa;
+  --blue-400: #3b82f6;
+  --blue-500: #1d6ff5;   /* Brand blue */
+  --blue-600: #1558cc;
+  --blue-700: #0d3fa3;
+  --blue-800: #072d7a;
+  --blue-900: #031b52;
+
+  /* Neutral */
+  --white:    #ffffff;
+  --off-white: #f5f5f7;
+  --gray-100: #e8e8ed;
+  --gray-200: #cfcfd8;
+  --gray-300: #9898a8;
+  --gray-400: #606070;
+  --gray-500: #3a3a48;
+  --black:    #0a0a0f;
+
+  /* ── Semantic Color Tokens ─────────────────────────────── */
+  --color-brand:          var(--orange-500);
+  --color-brand-hover:    var(--orange-400);
+  --color-brand-press:    var(--orange-600);
+  --color-brand-glow:     rgba(255, 85, 0, 0.35);
+  --color-brand-subtle:   rgba(255, 85, 0, 0.12);
+
+  --color-accent:         var(--blue-500);
+  --color-accent-hover:   var(--blue-400);
+  --color-accent-subtle:  rgba(29, 111, 245, 0.12);
+
+  --color-bg:             var(--navy-900);   /* Main app background */
+  --color-bg-surface:     var(--navy-800);   /* Cards, panels */
+  --color-bg-elevated:    var(--navy-700);   /* Modals, dropdowns */
+  --color-bg-overlay:     rgba(9, 14, 28, 0.85);
+
+  --color-fg:             var(--white);
+  --color-fg-muted:       var(--gray-200);
+  --color-fg-subtle:      var(--gray-300);
+  --color-fg-disabled:    var(--gray-400);
+
+  --color-border:         rgba(255, 255, 255, 0.08);
+  --color-border-strong:  rgba(255, 255, 255, 0.16);
+  --color-border-brand:   rgba(255, 85, 0, 0.4);
+
+  --color-success:  #22c55e;
+  --color-warning:  #facc15;
+  --color-error:    #ef4444;
+  --color-info:     var(--blue-400);
+
+  /* ── Typography ─────────────────────────────────────────── */
+  /* Families */
+  --font-display:  'Barlow Condensed', 'Rajdhani', sans-serif;
+  --font-body:     'Barlow', sans-serif;
+  --font-ui:       'Rajdhani', 'Barlow', sans-serif;
+  --font-mono:     'JetBrains Mono', monospace;
+
+  /* Scale */
+  --text-xs:    0.75rem;    /* 12px */
+  --text-sm:    0.875rem;   /* 14px */
+  --text-base:  1rem;       /* 16px */
+  --text-lg:    1.125rem;   /* 18px */
+  --text-xl:    1.25rem;    /* 20px */
+  --text-2xl:   1.5rem;     /* 24px */
+  --text-3xl:   1.875rem;   /* 30px */
+  --text-4xl:   2.25rem;    /* 36px */
+  --text-5xl:   3rem;       /* 48px */
+  --text-6xl:   3.75rem;    /* 60px */
+  --text-7xl:   4.5rem;     /* 72px */
+  --text-8xl:   6rem;       /* 96px */
+  --text-9xl:   8rem;       /* 128px */
+
+  /* Line heights */
+  --leading-tight:  1.1;
+  --leading-snug:   1.3;
+  --leading-normal: 1.5;
+  --leading-loose:  1.75;
+
+  /* Letter spacing */
+  --tracking-tight:  -0.02em;
+  --tracking-normal: 0em;
+  --tracking-wide:   0.05em;
+  --tracking-wider:  0.1em;
+  --tracking-widest: 0.2em;
+
+  /* Weights */
+  --weight-regular:    400;
+  --weight-medium:     500;
+  --weight-semibold:   600;
+  --weight-bold:       700;
+  --weight-extrabold:  800;
+  --weight-black:      900;
+
+  /* ── Semantic Typography ────────────────────────────────── */
+  --h1-font:    var(--font-display);
+  --h1-size:    var(--text-7xl);
+  --h1-weight:  var(--weight-black);
+  --h1-leading: var(--leading-tight);
+  --h1-tracking: var(--tracking-tight);
+  --h1-transform: uppercase;
+
+  --h2-font:    var(--font-display);
+  --h2-size:    var(--text-5xl);
+  --h2-weight:  var(--weight-bold);
+  --h2-leading: var(--leading-tight);
+  --h2-transform: uppercase;
+
+  --h3-font:    var(--font-display);
+  --h3-size:    var(--text-3xl);
+  --h3-weight:  var(--weight-bold);
+  --h3-leading: var(--leading-snug);
+  --h3-transform: uppercase;
+
+  --h4-font:    var(--font-ui);
+  --h4-size:    var(--text-xl);
+  --h4-weight:  var(--weight-semibold);
+  --h4-leading: var(--leading-snug);
+
+  --body-font:    var(--font-body);
+  --body-size:    var(--text-base);
+  --body-weight:  var(--weight-regular);
+  --body-leading: var(--leading-normal);
+
+  --label-font:    var(--font-ui);
+  --label-size:    var(--text-sm);
+  --label-weight:  var(--weight-semibold);
+  --label-tracking: var(--tracking-wider);
+  --label-transform: uppercase;
+
+  --caption-font:    var(--font-body);
+  --caption-size:    var(--text-xs);
+  --caption-weight:  var(--weight-regular);
+
+  /* ── Spacing ─────────────────────────────────────────────── */
+  --space-1:   0.25rem;   /* 4px  */
+  --space-2:   0.5rem;    /* 8px  */
+  --space-3:   0.75rem;   /* 12px */
+  --space-4:   1rem;      /* 16px */
+  --space-5:   1.25rem;   /* 20px */
+  --space-6:   1.5rem;    /* 24px */
+  --space-8:   2rem;      /* 32px */
+  --space-10:  2.5rem;    /* 40px */
+  --space-12:  3rem;      /* 48px */
+  --space-16:  4rem;      /* 64px */
+  --space-20:  5rem;      /* 80px */
+  --space-24:  6rem;      /* 96px */
+  --space-32:  8rem;      /* 128px */
+
+  /* ── Border Radius ──────────────────────────────────────── */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-2xl:  24px;
+  --radius-full: 9999px;
+
+  /* ── Shadows / Glow ─────────────────────────────────────── */
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:    0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg:    0 8px 32px rgba(0,0,0,0.6);
+  --shadow-xl:    0 16px 64px rgba(0,0,0,0.7);
+  --glow-brand:   0 0 20px rgba(255,85,0,0.5), 0 0 40px rgba(255,85,0,0.2);
+  --glow-brand-sm:0 0 8px rgba(255,85,0,0.6);
+  --glow-blue:    0 0 20px rgba(29,111,245,0.4);
+
+  /* ── Transitions ─────────────────────────────────────────── */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out:    cubic-bezier(0, 0, 0.2, 1);
+  --duration-fast:   120ms;
+  --duration-normal: 220ms;
+  --duration-slow:   400ms;
+
+  /* ── Z-index scale ──────────────────────────────────────── */
+  --z-base:    0;
+  --z-raised:  10;
+  --z-overlay: 100;
+  --z-modal:   200;
+  --z-toast:   300;
+  --z-tooltip: 400;
+}
+
+/* ── Base resets ────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--body-font);
+  font-size: var(--body-size);
+  line-height: var(--body-leading);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1 { font-family: var(--h1-font); font-size: var(--h1-size); font-weight: var(--h1-weight); line-height: var(--h1-leading); letter-spacing: var(--h1-tracking); text-transform: var(--h1-transform); }
+h2 { font-family: var(--h2-font); font-size: var(--h2-size); font-weight: var(--h2-weight); line-height: var(--h2-leading); text-transform: var(--h2-transform); }
+h3 { font-family: var(--h3-font); font-size: var(--h3-size); font-weight: var(--h3-weight); line-height: var(--h3-leading); text-transform: var(--h3-transform); }
+h4 { font-family: var(--h4-font); font-size: var(--h4-size); font-weight: var(--h4-weight); line-height: var(--h4-leading); }
+p  { font-family: var(--body-font); font-size: var(--body-size); line-height: var(--body-leading); color: var(--color-fg-muted); }
+a  { color: var(--color-brand); text-decoration: none; transition: color var(--duration-fast) var(--ease-smooth); }
+a:hover { color: var(--color-brand-hover); }
+code, pre { font-family: var(--font-mono); }

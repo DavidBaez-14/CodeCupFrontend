@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Delegado – Code Cup</title>
+<link rel="icon" href="assets/soccer-ball-sci-fi-192.png">
+<link rel="stylesheet" href="colors_and_type.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--color-bg); color: var(--color-fg);
+  font-family: var(--font-body); min-height: 100vh; overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* NAV */
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: 56px;
+  background: rgba(4,7,15,0.95); backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  display: flex; align-items: center; padding: 0 16px; gap: 12px;
+}
+.nav-logo { display: flex; align-items: center; gap: 7px; text-decoration: none; flex-shrink: 0; }
+.nav-logo img { width: 26px; height: 26px; border-radius: 6px; }
+.nav-logo-block { display: flex; flex-direction: column; line-height: 1; }
+.nav-logo-text { font-family: var(--font-display); font-size: 14px; font-weight: 900; text-transform: uppercase; color: #fff; letter-spacing: -0.01em; }
+.nav-logo-text em { color: #ff5500; font-style: normal; }
+.nav-logo-sub { font-family: var(--font-ui); font-size: 8px; font-weight: 700; letter-spacing: 0.18em; color: rgba(255,255,255,0.3); text-transform: uppercase; margin-top: 2px; }
+.nav-spacer { flex: 1; }
+.nav-user { display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 5px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 100px; }
+.nav-user-avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg,#ff5500,#b73a00); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 900; font-size: 11px; color: #fff; }
+.nav-user-name { font-family: var(--font-ui); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: rgba(255,255,255,0.85); }
+.nav-logout { font-family: var(--font-ui); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.4); background: none; border: none; cursor: pointer; padding: 6px 10px; display: none; }
+.nav-logout:hover { color: #ff5500; }
+@media (min-width: 540px) { .nav-logout { display: inline-block; } }
+
+.page { padding-top: 56px; max-width: 920px; margin: 0 auto; }
+
+/* HERO */
+.hero { position: relative; overflow: hidden; padding: 24px 20px 0; }
+.hero::before { content:''; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; }
+.hero::after { content:''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,85,0,0.06) 0%, transparent 70%); pointer-events: none; }
+.hero-inner { position: relative; z-index: 1; }
+.role-tag { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 9px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; padding: 5px 12px; border-radius: 3px; background: rgba(255,85,0,0.12); color: #ff5500; border: 1px solid rgba(255,85,0,0.3); margin-bottom: 12px; }
+.role-tag::before { content:''; width: 6px; height: 6px; border-radius: 50%; background: #ff5500; box-shadow: 0 0 8px #ff5500; }
+.hero-greeting { font-family: var(--font-display); font-size: clamp(28px,6vw,38px); font-weight: 900; letter-spacing: -0.02em; line-height: 1; margin-bottom: 8px; }
+.hero-greeting em { color: #ff5500; font-style: normal; }
+.hero-sub { font-family: var(--font-body); font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.5; max-width: 540px; }
+.hero-divider { position: relative; z-index: 1; margin: 20px -20px 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,85,0,0.25) 30%, rgba(255,85,0,0.25) 70%, transparent); }
+
+/* TABS */
+.tabs { position: sticky; top: 56px; z-index: 100; background: rgba(4,7,15,0.9); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; padding: 0 4px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex: 1; min-width: 110px; font-family: var(--font-ui); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.4); background: none; border: none; cursor: pointer; padding: 14px 12px 12px; border-bottom: 2px solid transparent; transition: color 180ms, border-color 180ms; white-space: nowrap; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.tab:hover { color: rgba(255,255,255,0.8); }
+.tab.active { color: #fff; border-bottom-color: #ff5500; }
+.tab-badge { font-family: var(--font-mono); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 8px; background: rgba(255,85,0,0.2); color: #ff5500; }
+
+.panel { display: none; padding: 28px 20px 48px; }
+.panel.active { display: block; }
+
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
+.section-title { font-family: var(--font-display); font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; }
+.section-action { font-family: var(--font-ui); font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.5); background: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; cursor: pointer; transition: all 150ms; }
+.section-action:hover { color: #ff5500; border-color: rgba(255,85,0,0.4); background: rgba(255,85,0,0.06); }
+.section-label { font-family: var(--font-ui); font-size: 9px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; margin-top: 28px; }
+.section-label::after { content:''; flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+.section-label:first-child { margin-top: 0; }
+
+/* TORNEOS */
+.tournament-card { background: var(--color-bg-surface); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-lg); padding: 18px; margin-bottom: 12px; display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; transition: all 180ms; }
+.tournament-card:hover { border-color: rgba(255,85,0,0.2); background: var(--color-bg-elevated); }
+.tournament-card.inscribed { border-color: rgba(255,85,0,0.25); background: linear-gradient(135deg, rgba(255,85,0,0.04), rgba(255,85,0,0.01)); }
+.tc-icon { width: 52px; height: 52px; border-radius: 12px; background: rgba(255,85,0,0.1); border: 1px solid rgba(255,85,0,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.tc-icon img { width: 32px; height: 32px; }
+.tc-info { min-width: 0; }
+.tc-title { font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; line-height: 1.1; margin-bottom: 4px; }
+.tc-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-family: var(--font-body); font-size: 11px; color: rgba(255,255,255,0.4); }
+.tc-meta .sep { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,0.2); flex-shrink: 0; }
+.tc-btn { font-family: var(--font-ui); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; background: #ff5500; color: #fff; border: none; border-radius: 6px; padding: 10px 16px; cursor: pointer; transition: background 150ms; white-space: nowrap; text-decoration: none; display: inline-block; }
+.tc-btn:hover { background: #e64d00; }
+.tc-btn.secondary { background: transparent; color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.1); }
+.tc-btn.secondary:hover { color: #ff5500; border-color: rgba(255,85,0,0.4); }
+.tc-status-chip { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-ui); font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; padding: 4px 10px; border-radius: 3px; }
+.tc-status-chip.pending { background: rgba(250,204,21,0.12); color: #facc15; border: 1px solid rgba(250,204,21,0.3); }
+.tc-status-chip.done { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.4); }
+@media (max-width: 540px) {
+  .tournament-card { grid-template-columns: auto 1fr; }
+  .tc-cta { grid-column: 1 / -1; display: flex; justify-content: flex-end; margin-top: 4px; }
+}
+
+.inscription-banner { background: linear-gradient(135deg, rgba(255,85,0,0.08), rgba(29,111,245,0.04)); border: 1px solid rgba(255,85,0,0.15); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; }
+.inscription-banner-icon { width: 44px; height: 44px; border-radius: 10px; background: rgba(255,85,0,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.inscription-banner-text { font-family: var(--font-body); font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.5; flex: 1; }
+.inscription-banner-text strong { color: #fff; font-weight: 700; }
+
+/* MI EQUIPO */
+.team-header { background: var(--color-bg-surface); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 24px; display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; }
+.team-crest { width: 56px; height: 56px; border-radius: 14px; background: rgba(29,111,245,0.18); border: 1.5px solid rgba(29,111,245,0.4); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 18px; font-weight: 900; color: #fff; flex-shrink: 0; }
+.team-info { min-width: 0; }
+.team-name { font-family: var(--font-display); font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; line-height: 1.1; margin-bottom: 4px; }
+.team-meta { font-family: var(--font-body); font-size: 12px; color: rgba(255,255,255,0.4); }
+.team-counters { display: flex; gap: 0; flex-shrink: 0; }
+.team-counter { text-align: center; padding: 0 14px; border-right: 1px solid rgba(255,255,255,0.05); }
+.team-counter:last-child { border-right: none; padding-right: 0; }
+.team-counter:first-child { padding-left: 0; }
+.team-counter-val { font-family: var(--font-display); font-size: 22px; font-weight: 900; color: #fff; line-height: 1; }
+.team-counter-val.warn { color: #facc15; }
+.team-counter-lbl { font-family: var(--font-ui); font-size: 8px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-top: 4px; }
+@media (max-width: 540px) {
+  .team-header { grid-template-columns: auto 1fr; }
+  .team-counters { grid-column: 1 / -1; justify-content: space-around; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 4px; }
+  .team-counter { border-right: none; padding: 0; }
+}
+
+.add-player-form { background: var(--color-bg-surface); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 20px; display: flex; gap: 8px; align-items: stretch; }
+.add-player-input { flex: 1; min-width: 0; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 10px 14px; font-family: var(--font-body); font-size: 13px; color: #fff; outline: none; transition: border-color 150ms; }
+.add-player-input::placeholder { color: rgba(255,255,255,0.3); }
+.add-player-input:focus { border-color: rgba(255,85,0,0.5); }
+.add-player-btn { flex-shrink: 0; font-family: var(--font-ui); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; background: #ff5500; color: #fff; border: none; border-radius: 6px; padding: 0 18px; cursor: pointer; transition: background 150ms; display: flex; align-items: center; gap: 6px; }
+.add-player-btn:hover { background: #e64d00; }
+
+.players-grid { display: grid; gap: 8px; }
+.player-row { background: var(--color-bg-surface); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-lg); padding: 12px 14px; display: grid; grid-template-columns: 40px 1fr auto auto; gap: 12px; align-items: center; transition: border-color 150ms; }
+.player-row:hover { border-color: rgba(255,255,255,0.12); }
+.player-row.suspended { border-color: rgba(239,68,68,0.25); background: linear-gradient(135deg, rgba(239,68,68,0.04), transparent); }
+.player-row.captain { border-color: rgba(250,204,21,0.25); }
+.player-num { width: 36px; height: 36px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 15px; font-weight: 900; color: #fff; }
+.player-row.captain .player-num { background: rgba(250,204,21,0.12); border-color: rgba(250,204,21,0.3); color: #facc15; }
+.player-details { min-width: 0; }
+.player-name-row { display: flex; align-items: center; gap: 6px; font-family: var(--font-display); font-size: 13px; font-weight: 700; color: #fff; line-height: 1.2; }
+.player-captain-tag { font-family: var(--font-ui); font-size: 8px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #facc15; background: rgba(250,204,21,0.12); padding: 2px 6px; border-radius: 3px; }
+.player-sub { font-family: var(--font-body); font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; display: flex; align-items: center; gap: 6px; }
+.player-sub .dot { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+.player-cards { display: flex; gap: 4px; align-items: center; }
+.player-card-badge { display: flex; align-items: center; gap: 3px; font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.6); }
+.card-yellow { width: 9px; height: 12px; border-radius: 2px; background: #facc15; }
+.card-blue { width: 9px; height: 12px; border-radius: 2px; background: #3b82f6; }
+.card-red { width: 9px; height: 12px; border-radius: 2px; background: #ef4444; }
+.player-actions { display: flex; gap: 4px; }
+.player-action { width: 30px; height: 30px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); cursor: pointer; transition: all 150ms; }
+.player-action:hover { color: #ff5500; border-color: rgba(255,85,0,0.3); background: rgba(255,85,0,0.05); }
+.player-action.danger:hover { color: #ef4444; border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.05); }
+.suspended-banner { font-family: var(--font-ui); font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #ef4444; background: rgba(239,68,68,0.12); padding: 3px 8px; border-radius: 3px; display: inline-flex; align-items: center; gap: 4px; }
+@media (max-width: 540px) {
+  .player-row { grid-template-columns: 40px 1fr auto; }
+  .player-actions { grid-column: 1 / -1; justify-content: flex-end; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.04); }
+}
+
+/* PAGOS */
+.payment-status-card { background: var(--color-bg-surface); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 24px; position: relative; overflow: hidden; }
+.payment-status-card.pending { border-color: rgba(250,204,21,0.3); background: linear-gradient(135deg, rgba(250,204,21,0.05), transparent); }
+.payment-status-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.payment-status-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(250,204,21,0.15); color: #facc15; }
+.payment-status-label { font-family: var(--font-ui); font-size: 9px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 2px; }
+.payment-status-title { font-family: var(--font-display); font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; }
+.payment-status-amount { font-family: var(--font-display); font-size: 32px; font-weight: 900; letter-spacing: -0.02em; color: #fff; margin-bottom: 4px; }
+.payment-status-amount em { font-style: normal; color: #ff5500; }
+.payment-status-detail { font-family: var(--font-body); font-size: 12px; color: rgba(255,255,255,0.4); }
+
+.payment-form { background: var(--color-bg-surface); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 24px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-field { display: flex; flex-direction: column; gap: 6px; }
+.form-field.full { grid-column: 1 / -1; }
+.form-label { font-family: var(--font-ui); font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+.form-input, .form-select { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 10px 12px; font-family: var(--font-body); font-size: 13px; color: #fff; outline: none; transition: border-color 150ms; width: 100%; }
+.form-input::placeholder { color: rgba(255,255,255,0.25); }
+.form-input:focus, .form-select:focus { border-color: rgba(255,85,0,0.5); }
+.form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+.file-drop { background: rgba(255,255,255,0.02); border: 1.5px dashed rgba(255,255,255,0.1); border-radius: 8px; padding: 24px; text-align: center; cursor: pointer; transition: all 150ms; }
+.file-drop:hover { border-color: rgba(255,85,0,0.4); background: rgba(255,85,0,0.03); }
+.file-drop-icon { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin: 0 auto 8px; background: rgba(255,85,0,0.1); border-radius: 10px; color: #ff5500; }
+.file-drop-label { font-family: var(--font-ui); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.7); }
+.file-drop-sub { font-family: var(--font-body); font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 4px; }
+.form-submit { margin-top: 18px; width: 100%; font-family: var(--font-ui); font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; background: #ff5500; color: #fff; border: none; border-radius: 6px; padding: 14px; cursor: pointer; transition: background 150ms; }
+.form-submit:hover { background: #e64d00; }
+
+.payment-history { display: grid; gap: 8px; }
+.payment-row { background: var(--color-bg-surface); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-lg); padding: 14px 16px; display: grid; grid-template-columns: auto 1fr auto auto; gap: 14px; align-items: center; }
+.payment-row-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(34,197,94,0.12); color: #22c55e; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.payment-row-icon.pending { background: rgba(250,204,21,0.12); color: #facc15; }
+.payment-row-title { font-family: var(--font-display); font-size: 13px; font-weight: 700; line-height: 1.2; }
+.payment-row-sub { font-family: var(--font-body); font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+.payment-row-amount { font-family: var(--font-display); font-size: 15px; font-weight: 800; color: #fff; white-space: nowrap; }
+.payment-row-chip { font-family: var(--font-ui); font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; padding: 4px 10px; border-radius: 3px; white-space: nowrap; }
+.payment-row-chip.paid { background: rgba(34,197,94,0.12); color: #22c55e; }
+.payment-row-chip.pending { background: rgba(250,204,21,0.12); color: #facc15; }
+@media (max-width: 540px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .payment-row { grid-template-columns: auto 1fr auto; }
+  .payment-row-chip { grid-column: 1 / -1; justify-self: flex-end; margin-top: 4px; }
+}
+
+.empty { text-align: center; padding: 48px 24px; border: 1.5px dashed rgba(255,255,255,0.08); border-radius: var(--radius-lg); }
+.empty-icon { width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; color: rgba(255,255,255,0.3); }
+.empty-title { font-family: var(--font-display); font-size: 14px; font-weight: 700; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+.empty-sub { font-family: var(--font-body); font-size: 12px; color: rgba(255,255,255,0.3); }
+
+.page-footer { border-top: 1px solid rgba(255,255,255,0.05); padding: 20px; text-align: center; font-size: 11px; color: rgba(255,255,255,0.15); font-family: var(--font-body); }
+
+@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.animate-in { animation: fadeSlideUp 0.3s var(--ease-out) both; }
+
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: rgba(20,30,50,0.95); border: 1px solid rgba(255,85,0,0.3); border-radius: 8px; padding: 12px 18px; font-family: var(--font-ui); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #fff; z-index: 300; opacity: 0; pointer-events: none; transition: all 250ms var(--ease-out); backdrop-filter: blur(12px); display: flex; align-items: center; gap: 8px; max-width: 90vw; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast svg { color: #22c55e; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="nav-logo" href="Torneo Activo.html">
+    <img src="assets/soccer-ball-sci-fi-192.png" alt="Code Cup">
+    <div class="nav-logo-block">
+      <span class="nav-logo-text"><em>C</em>ODE <em>C</em>UP</span>
+      <span class="nav-logo-sub">Panel de Delegado</span>
+    </div>
+  </a>
+  <div class="nav-spacer"></div>
+  <div class="nav-user">
+    <div class="nav-user-avatar">D</div>
+    <span class="nav-user-name">David</span>
+  </div>
+  <button class="nav-logout">Cerrar sesión</button>
+</nav>
+
+<div class="page">
+
+  <div class="hero">
+    <div class="hero-inner">
+      <span class="role-tag">Delegado</span>
+      <h1 class="hero-greeting">Hola, <em>David</em></h1>
+      <p class="hero-sub">Gestiona tu equipo, inscríbete a torneos abiertos y carga tus pagos. Tu equipo aparece como inscrito apenas envíes el comprobante.</p>
+    </div>
+    <div class="hero-divider"></div>
+  </div>
+
+  <nav class="tabs">
+    <button class="tab active" onclick="switchTab('torneos', this)">Torneos <span class="tab-badge">2</span></button>
+    <button class="tab" onclick="switchTab('equipo', this)">Mi Equipo</button>
+    <button class="tab" onclick="switchTab('pagos', this)">Pagos <span class="tab-badge">1</span></button>
+  </nav>
+
+  <!-- TORNEOS -->
+  <div class="panel active animate-in" id="panel-torneos">
+    <div class="inscription-banner">
+      <div class="inscription-banner-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ff5500" stroke-width="2"><path d="M12 2 L4 7 L4 17 L12 22 L20 17 L20 7 Z"/><path d="M12 12 L20 7"/><path d="M12 12 L12 22"/><path d="M12 12 L4 7"/></svg>
+      </div>
+      <div class="inscription-banner-text">
+        <strong>Tienes inscripciones abiertas</strong> — los torneos resaltados aún aceptan registros. La inscripción queda pendiente hasta cargar el pago.
+      </div>
+    </div>
+
+    <div class="section-label">Abiertos a inscripción</div>
+    <div id="torneos-abiertos"></div>
+
+    <div class="section-label">Mis torneos activos</div>
+    <div id="torneos-activos"></div>
+
+    <div class="section-label">Historial</div>
+    <div id="torneos-historial"></div>
+  </div>
+
+  <!-- MI EQUIPO -->
+  <div class="panel" id="panel-equipo">
+    <div class="team-header">
+      <div class="team-crest">CT</div>
+      <div class="team-info">
+        <div class="team-name">Combo de TITI</div>
+        <div class="team-meta">Supercopa Mundial 2026 · Pendiente de pago</div>
+      </div>
+      <div class="team-counters">
+        <div class="team-counter">
+          <div class="team-counter-val" id="cnt-total">10</div>
+          <div class="team-counter-lbl">Jugadores</div>
+        </div>
+        <div class="team-counter">
+          <div class="team-counter-val warn" id="cnt-suspended">1</div>
+          <div class="team-counter-lbl">Sancionados</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">Plantilla</div>
+      <button class="section-action" onclick="importPrevious()">Importar 2025</button>
+    </div>
+
+    <form class="add-player-form" onsubmit="addPlayer(event)">
+      <input class="add-player-input" id="new-player-cedula" placeholder="Cédula del jugador (ej: 1090000001)" type="text">
+      <button class="add-player-btn" type="submit">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Agregar
+      </button>
+    </form>
+
+    <div class="players-grid" id="players-grid"></div>
+  </div>
+
+  <!-- PAGOS -->
+  <div class="panel" id="panel-pagos">
+    <div class="payment-status-card pending">
+      <div class="payment-status-row">
+        <div class="payment-status-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div>
+          <div class="payment-status-label">Estado actual</div>
+          <div class="payment-status-title">Pendiente de pago</div>
+        </div>
+      </div>
+      <div class="payment-status-amount">$<em>150.000</em></div>
+      <div class="payment-status-detail">Inscripción Supercopa Mundial 2026 · Vence el 20 de Mayo</div>
+    </div>
+
+    <div class="section-label">Cargar comprobante</div>
+
+    <form class="payment-form" onsubmit="submitPayment(event)">
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label">Monto</label>
+          <input class="form-input" placeholder="150.000" type="text" value="150.000">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Fecha de pago</label>
+          <input class="form-input" type="date" value="2026-05-08">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Método</label>
+          <select class="form-select">
+            <option>Transferencia bancaria</option>
+            <option>Nequi</option>
+            <option>Daviplata</option>
+            <option>Efectivo</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">N° de transacción</label>
+          <input class="form-input" placeholder="Ej: TRX-9384721" type="text">
+        </div>
+        <div class="form-field full">
+          <label class="form-label">Comprobante</label>
+          <div class="file-drop" onclick="document.getElementById('file-input').click()">
+            <div class="file-drop-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+            <div class="file-drop-label">Arrastra el archivo o haz clic</div>
+            <div class="file-drop-sub">PDF, JPG o PNG · Máx 5MB</div>
+            <input id="file-input" type="file" accept=".pdf,.jpg,.jpeg,.png" style="display:none;">
+          </div>
+        </div>
+      </div>
+      <button class="form-submit" type="submit">Enviar pago para revisión</button>
+    </form>
+
+    <div class="section-label">Historial de pagos</div>
+    <div class="payment-history" id="payment-history"></div>
+  </div>
+
+  <div class="page-footer">© 2026 · Code Cup · UFPS Cúcuta</div>
+</div>
+
+<div class="toast" id="toast">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-msg">Listo</span>
+</div>
+
+<script>
+const TORNEOS_ABIERTOS = [
+  { name: 'Copa Inicio 2026-II', dates: 'Agosto 12 — Oct 30', equipos: '6 inscritos · 10 cupos', cierra: 'Cierra Ago 5', isInscribed: false },
+];
+const TORNEOS_ACTIVOS = [
+  { name: 'Supercopa Mundial 2026', dates: 'Abril 28 — Jun 8', equipos: '13 equipos · Fase de Grupos', status: 'pending' },
+];
+const TORNEOS_HISTORIAL = [
+  { name: 'Copa Apertura 2025-II', dates: 'Ago 2025 — Nov 2025', equipos: 'Campeón: Brasil', status: 'done' },
+  { name: 'Copa Inicio 2025-I',    dates: 'Feb 2025 — May 2025', equipos: '4° lugar · Combo de TITI', status: 'done' },
+];
+const PLAYERS = [
+  { num: 1,  name: 'David Reyes',       pos: 'Portero',   cedula: '1090000001', yel: 0, blue: 0, red: 0, captain: true,  suspended: false },
+  { num: 7,  name: 'Brayan Rodríguez',  pos: 'Delantero', cedula: '1090000002', yel: 1, blue: 0, red: 0, suspended: false },
+  { num: 10, name: 'Kevin Mendoza',     pos: 'Mediocampo',cedula: '1090000003', yel: 2, blue: 1, red: 0, suspended: false },
+  { num: 4,  name: 'Sebastián Torres',  pos: 'Defensa',   cedula: '1090000004', yel: 1, blue: 0, red: 0, suspended: false },
+  { num: 11, name: 'Felipe Ospina',     pos: 'Delantero', cedula: '1090000005', yel: 0, blue: 0, red: 0, suspended: false },
+  { num: 6,  name: 'Carlos Pérez',      pos: 'Mediocampo',cedula: '1090000006', yel: 2, blue: 0, red: 0, suspended: false },
+  { num: 3,  name: 'Andrés López',      pos: 'Defensa',   cedula: '1090000007', yel: 0, blue: 0, red: 0, suspended: false },
+  { num: 8,  name: 'Juan Duarte',       pos: 'Mediocampo',cedula: '1090000008', yel: 1, blue: 0, red: 0, suspended: false },
+  { num: 9,  name: 'Miguel Acosta',     pos: 'Delantero', cedula: '1090000009', yel: 0, blue: 0, red: 1, suspended: true },
+  { num: 5,  name: 'Diego Henao',       pos: 'Defensa',   cedula: '1090000010', yel: 1, blue: 0, red: 0, suspended: false },
+];
+const PAYMENT_HISTORY = [
+  { title: 'Inscripción Copa Apertura 2025-II', date: 'Ago 4, 2025', amount: '$120.000', status: 'paid' },
+  { title: 'Inscripción Copa Inicio 2025-I',    date: 'Feb 10, 2025', amount: '$120.000', status: 'paid' },
+];
+
+function tournamentCard(t, ctx) {
+  let ctaHtml;
+  if (ctx === 'abierto') {
+    ctaHtml = t.isInscribed
+      ? `<span class="tc-status-chip pending">Inscrito · Pendiente</span>`
+      : `<button class="tc-btn" onclick="inscribir('${t.name}')">Inscribirme</button>`;
+  } else if (ctx === 'activo') {
+    ctaHtml = `<a class="tc-btn secondary" href="Torneo Activo.html">Ver torneo</a>`;
+  } else {
+    ctaHtml = `<span class="tc-status-chip done">Finalizado</span>`;
+  }
+
+  const statusBelow = (ctx === 'activo' && t.status === 'pending')
+    ? `<div style="margin-top:6px;"><span class="tc-status-chip pending">Pago pendiente</span></div>`
+    : '';
+
+  return `<div class="tournament-card ${ctx==='activo' ? 'inscribed' : ''}">
+    <div class="tc-icon"><img src="assets/soccer-ball-sci-fi-192.png" alt=""></div>
+    <div class="tc-info">
+      <div class="tc-title">${t.name}</div>
+      <div class="tc-meta">
+        <span>${t.dates}</span>
+        <span class="sep"></span>
+        <span>${t.equipos}</span>
+        ${t.cierra ? `<span class="sep"></span><span style="color:#facc15;">${t.cierra}</span>` : ''}
+      </div>
+      ${statusBelow}
+    </div>
+    <div class="tc-cta">${ctaHtml}</div>
+  </div>`;
+}
+
+function emptyState(title, sub) {
+  return `<div class="empty">
+    <div class="empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="empty-title">${title}</div>
+    ${sub ? `<div class="empty-sub">${sub}</div>` : ''}
+  </div>`;
+}
+
+function renderTorneos() {
+  document.getElementById('torneos-abiertos').innerHTML =
+    TORNEOS_ABIERTOS.length ? TORNEOS_ABIERTOS.map(t => tournamentCard(t,'abierto')).join('') : emptyState('No hay torneos abiertos a inscripción','Revisa más tarde');
+  document.getElementById('torneos-activos').innerHTML =
+    TORNEOS_ACTIVOS.length ? TORNEOS_ACTIVOS.map(t => tournamentCard(t,'activo')).join('') : emptyState('No estás inscrito en ningún torneo activo','');
+  document.getElementById('torneos-historial').innerHTML =
+    TORNEOS_HISTORIAL.length ? TORNEOS_HISTORIAL.map(t => tournamentCard(t,'historial')).join('') : emptyState('Aún no hay historial','');
+}
+
+function renderPlayers() {
+  document.getElementById('cnt-total').textContent = PLAYERS.length;
+  document.getElementById('cnt-suspended').textContent = PLAYERS.filter(p => p.suspended).length;
+  document.getElementById('players-grid').innerHTML = PLAYERS.map((p, i) => {
+    const cardsHtml = [];
+    if (p.yel > 0)  cardsHtml.push(`<div class="player-card-badge"><div class="card-yellow"></div>${p.yel}</div>`);
+    if (p.blue > 0) cardsHtml.push(`<div class="player-card-badge"><div class="card-blue"></div>${p.blue}</div>`);
+    if (p.red > 0)  cardsHtml.push(`<div class="player-card-badge"><div class="card-red"></div>${p.red}</div>`);
+    const subContent = p.suspended
+      ? `<span class="suspended-banner">⚠ Sancionado · 1 fecha</span>`
+      : `<span class="player-sub"><span>${p.pos}</span><span class="dot"></span><span>${p.cedula}</span></span>`;
+    return `<div class="player-row ${p.captain?'captain':''} ${p.suspended?'suspended':''}">
+      <div class="player-num">${p.num}</div>
+      <div class="player-details">
+        <div class="player-name-row">${p.name}${p.captain?'<span class="player-captain-tag">Capitán</span>':''}</div>
+        ${subContent}
+      </div>
+      <div class="player-cards">${cardsHtml.join('')}</div>
+      <div class="player-actions">
+        <button class="player-action" onclick="editPlayer(${i})" title="Editar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="player-action danger" onclick="removePlayer(${i})" title="Eliminar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPaymentHistory() {
+  document.getElementById('payment-history').innerHTML = PAYMENT_HISTORY.map(p => `
+    <div class="payment-row">
+      <div class="payment-row-icon ${p.status}">
+        ${p.status==='paid' ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'}
+      </div>
+      <div>
+        <div class="payment-row-title">${p.title}</div>
+        <div class="payment-row-sub">${p.date}</div>
+      </div>
+      <div class="payment-row-amount">${p.amount}</div>
+      <span class="payment-row-chip ${p.status}">${p.status==='paid'?'Aprobado':'En revisión'}</span>
+    </div>`).join('');
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const panel = document.getElementById('panel-' + name);
+  panel.classList.add('active');
+  panel.classList.remove('animate-in');
+  void panel.offsetWidth;
+  panel.classList.add('animate-in');
+  btn.classList.add('active');
+}
+
+function inscribir(name) {
+  toast(`Inscripción enviada a ${name}`);
+  TORNEOS_ABIERTOS[0].isInscribed = true;
+  renderTorneos();
+}
+function importPrevious() { toast('Equipo de 2025 importado'); }
+function addPlayer(e) {
+  e.preventDefault();
+  const input = document.getElementById('new-player-cedula');
+  const v = input.value.trim();
+  if (!v) return;
+  toast(`Verificando cédula ${v}...`);
+  input.value = '';
+}
+function editPlayer(i) { toast(`Editando ${PLAYERS[i].name}`); }
+function removePlayer(i) {
+  if (!confirm(`¿Eliminar a ${PLAYERS[i].name} del equipo?`)) return;
+  PLAYERS.splice(i, 1); renderPlayers(); toast('Jugador eliminado');
+}
+function submitPayment(e) { e.preventDefault(); toast('Pago enviado para revisión'); }
+
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+renderTorneos();
+renderPlayers();
+renderPaymentHistory();
+</script>
+</body>
+</html>

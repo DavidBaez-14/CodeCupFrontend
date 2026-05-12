@@ -6,7 +6,11 @@ import { aprobarRol, listPendientes, rechazarRol } from '../api/registros';
 import { getJugadorByCedula, uploadCsv } from '../api/jugadores';
 import { appwriteLogout } from '../lib/appwrite';
 import { clearSession, getEmail, getNombre, getToken } from '../utils/session';
+import ConfigurarTorneoView from './admin/ConfigurarTorneoView';
+import GestionarEquiposView from './admin/GestionarEquiposView';
+import FixtureView from './admin/FixtureView';
 import '../styles/admin.css';
+import '../styles/admin-torneo.css';
 
 const SIDEBAR_GROUPS = [
   {
@@ -20,9 +24,9 @@ const SIDEBAR_GROUPS = [
   {
     title: 'Torneo',
     items: [
-      { id: 'torneo', label: 'Configurar torneo' },
-      { id: 'equipos', label: 'Gestionar equipos' },
-      { id: 'fixture', label: 'Fixture y cronograma' },
+      { id: 'torneo', label: 'Configurar torneo', live: true },
+      { id: 'equipos', label: 'Gestionar equipos', live: true },
+      { id: 'fixture', label: 'Fixture y cronograma', live: true },
       { id: 'aplazamientos', label: 'Aplazamientos' },
     ],
   },
@@ -47,7 +51,12 @@ const VIEW_LABEL = {
   pendientes: 'Solicitudes pendientes',
   csv: 'Cargar jugadores CSV',
   buscar: 'Buscar jugador',
+  torneo: 'Configurar torneo',
+  equipos: 'Gestionar equipos',
+  fixture: 'Fixture y cronograma',
 };
+
+const LIVE_VIEWS = ['pendientes', 'csv', 'buscar', 'torneo', 'equipos', 'fixture'];
 
 const ROL_LABEL = {
   ARBITRO: 'Árbitro',
@@ -147,7 +156,10 @@ function AdminDashboard() {
         {activeView === 'pendientes' && <PendientesView />}
         {activeView === 'csv' && <CsvView />}
         {activeView === 'buscar' && <BuscarJugadorView />}
-        {!['pendientes', 'csv', 'buscar'].includes(activeView) && <PlaceholderView />}
+        {activeView === 'torneo' && <ConfigurarTorneoView />}
+        {activeView === 'equipos' && <GestionarEquiposView />}
+        {activeView === 'fixture' && <FixtureView />}
+        {!LIVE_VIEWS.includes(activeView) && <PlaceholderView />}
       </section>
     </main>
   );

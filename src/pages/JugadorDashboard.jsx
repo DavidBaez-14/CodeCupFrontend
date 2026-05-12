@@ -1,29 +1,27 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
 import RoleHeaderActions from '../components/RoleHeaderActions';
-import { getMiPerfil, getMisSolicitudes, listEquipos, listTorneos, solicitarIngreso } from '../api/supercopa';
+import {
+  getMiPerfil,
+  getMisSolicitudes,
+  listEquiposPorTorneo,
+  listTorneos,
+  solicitarIngreso,
+} from '../api/supercopa';
 import { TEAM_COLORS } from '../data/supercopa';
 import { appwriteLogout } from '../lib/appwrite';
 import { clearSession, getNombre, getToken } from '../utils/session';
+import SolicitudIngresoModal from './jugador/SolicitudIngresoModal';
 import '../styles/admin.css';
 import '../styles/role-shell.css';
 import '../styles/jugador.css';
+import '../styles/admin-torneo.css';
 
 const TABS = [
   { id: 'equipo', label: 'Equipo' },
   { id: 'perfil', label: 'Perfil' },
 ];
-
-function normalizeEquipos(data) {
-  if (Array.isArray(data)) {
-    return data.map((item) => {
-      if (typeof item === 'string') return { id: item, nombre: item };
-      return { id: item.id || item.nombre, nombre: item.nombre || item.name || 'Equipo' };
-    });
-  }
-  return [];
-}
 
 function JugadorDashboard() {
   const navigate = useNavigate();
@@ -31,21 +29,25 @@ function JugadorDashboard() {
   const token = getToken();
 
   const [activeTab, setActiveTab] = useState('equipo');
-  const [equipos, setEquipos] = useState([]);
-  const [perfil, setPerfil] = useState(null);
+
+  // Equipo tab
   const [torneos, setTorneos] = useState([]);
+  const [torneoId, setTorneoId] = useState('');
+  const [equipos, setEquipos] = useState([]);
+  const [loadingTorneos, setLoadingTorneos] = useState(false);
   const [loadingEquipos, setLoadingEquipos] = useState(false);
-  const [loadingPerfil, setLoadingPerfil] = useState(false);
   const [errorEquipos, setErrorEquipos] = useState('');
-  const [errorPerfil, setErrorPerfil] = useState('');
   const [solicitudMsg, setSolicitudMsg] = useState('');
-  const [solicitudando, setSolicitudando] = useState(null);
-  // { [equipoId]: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' }
+  const [modalEquipo, setModalEquipo] = useState(null);
+  const [enviando, setEnviando] = useState(false);
+  const [errorModal, setErrorModal] = useState('');
+  // map: equipoTorneoId -> estado ('PENDIENTE' | 'APROBADA' | 'RECHAZADA')
   const [estadosSolicitud, setEstadosSolicitud] = useState({});
 
-  const fallbackEquipos = useMemo(() => {
-    return Object.keys(TEAM_COLORS).map((name) => ({ id: name, nombre: name }));
-  }, []);
+  // Perfil tab
+  const [perfil, setPerfil] = useState(null);
+  const [loadingPerfil, setLoadingPerfil] = useState(false);
+  const [errorPerfil, setErrorPerfil] = useState('');
 
   const handleLogout = async () => {
     clearSession();
@@ -53,87 +55,94 @@ function JugadorDashboard() {
     navigate('/');
   };
 
+  // Cargar torneos (publicados o en curso)
   useEffect(() => {
     let alive = true;
-    async function loadEquipos() {
-      setLoadingEquipos(true);
-      setErrorEquipos('');
-      try {
-        const data = await listEquipos(token);
-        if (!alive) return;
-        const normalized = normalizeEquipos(data);
-        setEquipos(normalized.length ? normalized : fallbackEquipos);
-      } catch (err) {
-        if (!alive) return;
-        setErrorEquipos(err?.message || 'No fue posible cargar los equipos.');
-        setEquipos(fallbackEquipos);
-      } finally {
-        if (alive) setLoadingEquipos(false);
-      }
-    }
-    loadEquipos();
-    return () => { alive = false; };
-  }, [fallbackEquipos, token]);
-
-  useEffect(() => {
-    let alive = true;
+    setLoadingTorneos(true);
     listTorneos(token)
-      .then((data) => { if (alive && Array.isArray(data)) setTorneos(data); })
-      .catch(() => {});
+      .then((data) => {
+        if (!alive) return;
+        const list = Array.isArray(data) ? data : [];
+        const elegibles = list.filter((t) => t.estado === 'PUBLICADO' || t.estado === 'EN_CURSO');
+        setTorneos(elegibles);
+        if (elegibles.length && !torneoId) setTorneoId(elegibles[0].id);
+      })
+      .catch(() => {})
+      .finally(() => { if (alive) setLoadingTorneos(false); });
     return () => { alive = false; };
-  }, [token]);
+  }, [token, torneoId]);
 
+  // Cargar equipos del torneo seleccionado
+  const loadEquipos = useCallback(async () => {
+    if (!torneoId) { setEquipos([]); return; }
+    setLoadingEquipos(true);
+    setErrorEquipos('');
+    try {
+      const data = await listEquiposPorTorneo(torneoId, token);
+      setEquipos(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setErrorEquipos(err?.message || 'No fue posible cargar los equipos.');
+      setEquipos([]);
+    } finally {
+      setLoadingEquipos(false);
+    }
+  }, [torneoId, token]);
+
+  useEffect(() => { loadEquipos(); }, [loadEquipos]);
+
+  // Mis solicitudes -> mapa por equipoTorneoId
   useEffect(() => {
     let alive = true;
     getMisSolicitudes(token)
       .then((data) => {
         if (!alive || !Array.isArray(data)) return;
         const map = {};
-        data.forEach((s) => { map[String(s.equipoId)] = s.estado; });
+        for (const s of data) {
+          if (s.equipoTorneoId) map[String(s.equipoTorneoId)] = s.estado;
+        }
         setEstadosSolicitud(map);
       })
       .catch(() => {});
     return () => { alive = false; };
   }, [token]);
 
-  const handleSolicitar = async (equipo) => {
-    const torneoId = torneos[0]?.id;
-    if (!torneoId) {
-      setSolicitudMsg('No hay torneos disponibles.');
-      return;
-    }
-    setSolicitudando(equipo.id);
+  const handleAbrirModal = (equipo) => {
     setSolicitudMsg('');
+    setErrorModal('');
+    setModalEquipo(equipo);
+  };
+
+  const handleConfirmar = async (datosPersonales) => {
+    if (!modalEquipo) return;
+    setEnviando(true);
+    setErrorModal('');
     try {
-      await solicitarIngreso(String(equipo.id), torneoId, token);
-      setEstadosSolicitud((prev) => ({ ...prev, [String(equipo.id)]: 'PENDIENTE' }));
-      setSolicitudMsg(`Solicitud enviada para ${equipo.nombre}. Espera aprobación del delegado.`);
+      await solicitarIngreso({
+        equipoTorneoId: modalEquipo.equipoTorneoId,
+        alturaCm: datosPersonales.alturaCm,
+        piernaHabil: datosPersonales.piernaHabil,
+        posicion: datosPersonales.posicion,
+      }, token);
+      setEstadosSolicitud((prev) => ({ ...prev, [String(modalEquipo.equipoTorneoId)]: 'PENDIENTE' }));
+      setSolicitudMsg(`Solicitud enviada para "${modalEquipo.equipoNombre}". Espera aprobación del delegado.`);
+      setModalEquipo(null);
     } catch (err) {
-      setSolicitudMsg(err?.message || 'No se pudo enviar la solicitud.');
+      setErrorModal(err?.message || 'No fue posible enviar la solicitud.');
     } finally {
-      setSolicitudando(null);
+      setEnviando(false);
     }
   };
 
+  // Perfil
   useEffect(() => {
     let alive = true;
-    async function loadPerfil() {
-      setLoadingPerfil(true);
-      setErrorPerfil('');
-      try {
-        const data = await getMiPerfil(token);
-        if (!alive) return;
-        setPerfil(data || null);
-      } catch (err) {
-        if (!alive) return;
-        setErrorPerfil(err?.message || 'No fue posible cargar tu perfil.');
-      } finally {
-        if (alive) setLoadingPerfil(false);
-      }
-    }
-    loadPerfil();
+    setLoadingPerfil(true);
+    getMiPerfil(token)
+      .then((data) => { if (alive) setPerfil(data || null); })
+      .catch((err) => { if (alive) setErrorPerfil(err?.message || 'No fue posible cargar tu perfil.'); })
+      .finally(() => { if (alive) setLoadingPerfil(false); });
     return () => { alive = false; };
-  }, [token]);
+  }, [token, activeTab]);
 
   return (
     <main className="role-shell jugador-shell">
@@ -169,36 +178,53 @@ function JugadorDashboard() {
         {activeTab === 'equipo' && (
           <article className="ds-panel">
             <header className="panel-header">
-              <h2>Equipos disponibles</h2>
-              <p>Selecciona el equipo en el que deseas inscribirte para la Supercopa.</p>
+              <h2>Unirme a un equipo</h2>
+              <p>Selecciona un torneo y solicita ingreso a un equipo inscrito.</p>
             </header>
 
+            <div className="inline-search">
+              <label className="form-label" htmlFor="torneo-jug">Torneo:</label>
+              <select
+                id="torneo-jug"
+                className="form-input"
+                value={torneoId}
+                onChange={(e) => setTorneoId(e.target.value)}
+                disabled={loadingTorneos || torneos.length === 0}
+              >
+                {torneos.length === 0 ? (
+                  <option value="">— Sin torneos disponibles —</option>
+                ) : (
+                  torneos.map((t) => (
+                    <option key={t.id} value={t.id}>{t.nombre} ({t.estado})</option>
+                  ))
+                )}
+              </select>
+              <button type="button" className="action-button ghost" onClick={loadEquipos} disabled={loadingEquipos}>
+                {loadingEquipos ? 'Refrescando…' : 'Refrescar'}
+              </button>
+            </div>
+
             {errorEquipos && <p className="banner banner-error">{errorEquipos}</p>}
-            {solicitudMsg && (
-              <p className={`banner ${solicitudMsg.startsWith('Solicitud enviada') ? 'banner-success' : 'banner-error'}`}>
-                {solicitudMsg}
-              </p>
-            )}
+            {solicitudMsg && <p className="banner banner-success">{solicitudMsg}</p>}
+
             {loadingEquipos ? (
               <p className="empty-state">Cargando equipos…</p>
+            ) : equipos.length === 0 ? (
+              <p className="empty-state">Aún no hay equipos inscritos en este torneo.</p>
             ) : (
               <div className="equipo-grid">
-                {equipos.map((equipo) => {
-                  const estado = estadosSolicitud[String(equipo.id)];
-                  const sending = solicitudando === equipo.id;
+                {equipos.map((eq) => {
+                  const estado = estadosSolicitud[String(eq.equipoTorneoId)];
                   const locked = estado === 'PENDIENTE' || estado === 'APROBADA';
 
-                  const btnLabel = sending ? 'Enviando…'
-                    : estado === 'APROBADA'  ? '✓ Aprobado'
+                  const btnLabel = estado === 'APROBADA' ? '✓ Aprobado'
                     : estado === 'PENDIENTE' ? '⏳ Pendiente'
                     : estado === 'RECHAZADA' ? 'Reintentar'
                     : 'Solicitar ingreso';
-
-                  const subtext = estado === 'APROBADA'  ? 'Eres miembro de este equipo.'
+                  const subtext = estado === 'APROBADA' ? 'Eres miembro de este equipo.'
                     : estado === 'PENDIENTE' ? 'Solicitud pendiente de aprobación.'
-                    : estado === 'RECHAZADA' ? 'Tu solicitud fue rechazada.'
-                    : 'Solicita tu cupo en este equipo.';
-
+                    : estado === 'RECHAZADA' ? 'Tu solicitud fue rechazada. Puedes reintentar.'
+                    : `${eq.miembros ?? 0} miembro(s) · estado ${eq.estadoInscripcion}`;
                   const btnStyle = estado === 'APROBADA'
                     ? { borderColor: 'var(--color-success)', color: 'var(--color-success)' }
                     : estado === 'PENDIENTE'
@@ -208,22 +234,22 @@ function JugadorDashboard() {
                     : {};
 
                   return (
-                    <div key={equipo.id} className="equipo-card">
+                    <div key={eq.equipoTorneoId} className="equipo-card">
                       <span
                         className="equipo-dot"
-                        style={{ backgroundColor: TEAM_COLORS[equipo.nombre] || '#3d4f80' }}
+                        style={{ backgroundColor: TEAM_COLORS[eq.equipoNombre] || '#3d4f80' }}
                         aria-hidden="true"
                       />
                       <div className="equipo-info">
-                        <h3>{equipo.nombre}</h3>
+                        <h3>{eq.equipoNombre}</h3>
                         <p>{subtext}</p>
                       </div>
                       <button
                         className="action-button ghost"
                         type="button"
                         style={btnStyle}
-                        disabled={sending || locked}
-                        onClick={() => handleSolicitar(equipo)}
+                        disabled={locked}
+                        onClick={() => handleAbrirModal(eq)}
                       >
                         {btnLabel}
                       </button>
@@ -247,8 +273,6 @@ function JugadorDashboard() {
               <p className="empty-state">Cargando tu perfil…</p>
             ) : perfil ? (
               <div className="perfil-stack">
-
-                {/* Resumen de estadísticas */}
                 <div className="perfil-summary">
                   <div>
                     <h3>{perfil.nombre || nombre}</h3>
@@ -280,7 +304,6 @@ function JugadorDashboard() {
                   </div>
                 </div>
 
-                {/* Equipos donde ha jugado */}
                 <div className="perfil-block">
                   <h4>Equipos donde ha jugado</h4>
                   {perfil?.equipos?.length ? (
@@ -292,7 +315,10 @@ function JugadorDashboard() {
                             style={{ backgroundColor: TEAM_COLORS[item.nombre] || '#3d4f80' }}
                             aria-hidden="true"
                           />
-                          <span className="perfil-equipo-nombre">{item.nombre}</span>
+                          <span className="perfil-equipo-nombre">
+                            {item.nombre}
+                            {item.torneo && <small className="muted"> · {item.torneo}</small>}
+                          </span>
                           <span className="perfil-equipo-fecha">
                             {item.desde ?? '—'} → {item.hasta ?? 'Actual'}
                           </span>
@@ -304,7 +330,6 @@ function JugadorDashboard() {
                   )}
                 </div>
 
-                {/* Títulos obtenidos */}
                 {perfil?.titulos?.length > 0 && (
                   <div className="perfil-block">
                     <h4>Títulos obtenidos</h4>
@@ -322,7 +347,6 @@ function JugadorDashboard() {
                   </div>
                 )}
 
-                {/* Historial de partidos */}
                 <div className="perfil-block">
                   <h4>Partidos jugados</h4>
                   {perfil?.partidos?.length ? (
@@ -360,7 +384,6 @@ function JugadorDashboard() {
                     <p className="empty-state">Aún no hay partidos registrados.</p>
                   )}
                 </div>
-
               </div>
             ) : (
               <p className="empty-state">No hay datos de perfil todavía.</p>
@@ -368,6 +391,16 @@ function JugadorDashboard() {
           </article>
         )}
       </section>
+
+      {modalEquipo && (
+        <SolicitudIngresoModal
+          equipo={modalEquipo}
+          sending={enviando}
+          error={errorModal}
+          onCancel={() => { setModalEquipo(null); setErrorModal(''); }}
+          onConfirm={handleConfirmar}
+        />
+      )}
     </main>
   );
 }

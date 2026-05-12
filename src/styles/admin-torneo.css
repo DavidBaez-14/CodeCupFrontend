@@ -1,0 +1,186 @@
+/* =============================================
+   Admin · Torneos / Equipos / Fixture / Eventos
+   ============================================= */
+
+.torneo-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+  margin-bottom: var(--space-4, 16px);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3, 12px);
+  align-items: end;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field .form-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-fg-muted);
+}
+
+/* Estado pills */
+.status-pill.estado-borrador {
+  background: rgba(255,255,255,0.06);
+  color: var(--color-fg-muted);
+  border: 1px solid var(--color-border);
+}
+.status-pill.estado-publicado {
+  background: rgba(59,130,246,0.12);
+  color: #3b82f6;
+  border: 1px solid rgba(59,130,246,0.3);
+}
+.status-pill.estado-en_curso {
+  background: rgba(34,197,94,0.12);
+  color: #22c55e;
+  border: 1px solid rgba(34,197,94,0.3);
+}
+.status-pill.estado-finalizado {
+  background: rgba(255,255,255,0.06);
+  color: var(--color-fg-muted);
+  border: 1px solid var(--color-border);
+}
+.status-pill.estado-pendiente_pago {
+  background: rgba(250,204,21,0.12);
+  color: #facc15;
+  border: 1px solid rgba(250,204,21,0.3);
+}
+.status-pill.estado-aprobado {
+  background: rgba(34,197,94,0.12);
+  color: #22c55e;
+  border: 1px solid rgba(34,197,94,0.3);
+}
+.status-pill.estado-rechazado {
+  background: rgba(239,68,68,0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239,68,68,0.3);
+}
+.status-pill.estado-programado {
+  background: rgba(255,255,255,0.06);
+  color: var(--color-fg-muted);
+  border: 1px solid var(--color-border);
+}
+.status-pill.estado-aplazado {
+  background: rgba(250,204,21,0.12);
+  color: #facc15;
+  border: 1px solid rgba(250,204,21,0.3);
+}
+.status-pill.estado-wo {
+  background: rgba(239,68,68,0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239,68,68,0.3);
+}
+
+/* Fixture */
+.fixture-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5, 20px);
+}
+.fixture-jornada h4 {
+  font-family: var(--font-display, inherit);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: var(--space-3, 12px);
+  color: var(--color-fg-muted);
+}
+.fixture-matches {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-3, 12px);
+}
+
+/* Modal de eventos */
+.modal-wide {
+  max-width: 720px;
+  width: 92%;
+}
+.evento-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+  margin-bottom: var(--space-3, 12px);
+}
+.evento-modal-header h3 {
+  margin: 0 0 4px 0;
+}
+.evento-form {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--space-3, 12px);
+  margin-bottom: var(--space-4, 16px);
+}
+
+.evento-list-wrap h4 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-fg-muted);
+  margin-bottom: var(--space-2, 8px);
+}
+.evento-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.evento-item {
+  display: grid;
+  grid-template-columns: 36px 18px 1fr 1.4fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--color-bg-elevated, rgba(255,255,255,0.03));
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.evento-orden {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--color-fg-muted);
+}
+.evento-equipo {
+  color: var(--color-fg-muted);
+  font-size: 12px;
+}
+.evento-jugador {
+  font-weight: 600;
+}
+.evento-del {
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+}
+.evento-item.evento-gol { border-left: 3px solid #22c55e; }
+.evento-item.evento-amarilla { border-left: 3px solid #facc15; }
+.evento-item.evento-azul { border-left: 3px solid #3b82f6; }
+.evento-item.evento-roja { border-left: 3px solid #ef4444; }
+
+/* Tarjetas pequeñas */
+.tarjeta-badge {
+  display: inline-block;
+  width: 12px;
+  height: 16px;
+  border-radius: 2px;
+}
+.tarjeta-badge.gol { background: #22c55e; border-radius: 50%; }
+.tarjeta-badge.amarilla { background: #facc15; }
+.tarjeta-badge.azul { background: #3b82f6; }
+.tarjeta-badge.roja { background: #ef4444; }
