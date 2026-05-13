@@ -1,10 +1,10 @@
 import { requestJson } from './http';
 
-const MS2_ORIGIN = import.meta.env.VITE_MS2_ORIGIN ?? '';
+const GATEWAY_ORIGIN = import.meta.env.VITE_GATEWAY_URL ?? '';
 
 function buildUrl(path) {
-  if (!MS2_ORIGIN) return path;
-  return `${MS2_ORIGIN}${path}`;
+  if (!GATEWAY_ORIGIN) return path;
+  return `${GATEWAY_ORIGIN}${path}`;
 }
 
 function authHeader(token, contentType = false) {
