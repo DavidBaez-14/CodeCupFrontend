@@ -65,6 +65,13 @@ const ROL_LABEL = {
   JUGADOR: 'Jugador',
 };
 
+const ROLES_JUGADOR = [
+  { value: 'ESTUDIANTE', label: 'Estudiante' },
+  { value: 'GRADUADO', label: 'Graduado' },
+  { value: 'PROFESOR', label: 'Profesor' },
+  { value: 'ADMINISTRATIVO', label: 'Administrativo' },
+];
+
 const ESTADO_LABEL = {
   PENDIENTE: 'Pendiente',
   PENDIENTE_VALIDACION: 'Validación manual',
@@ -369,6 +376,32 @@ function CsvView() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualForm, setManualForm] = useState({
+    nombre: '',
+    cedula: '',
+    rolJugador: 'ESTUDIANTE',
+    codigoUniversitario: '',
+    semestre: '',
+  });
+  const [manualError, setManualError] = useState('');
+  const [manualSubmitting, setManualSubmitting] = useState(false);
+
+  const resetManualForm = () => {
+    setManualForm({
+      nombre: '',
+      cedula: '',
+      rolJugador: 'ESTUDIANTE',
+      codigoUniversitario: '',
+      semestre: '',
+    });
+    setManualError('');
+  };
+
+  const openManual = () => {
+    resetManualForm();
+    setManualOpen(true);
+  };
 
   const handleFileChange = async (event) => {
     const selected = event.target.files?.[0] || null;
@@ -423,6 +456,73 @@ function CsvView() {
     }
   };
 
+  const toCsvValue = (value) => {
+    if (value === null || value === undefined) return '';
+    const text = String(value);
+    if (/[",\n]/.test(text)) {
+      return `"${text.replace(/"/g, '""')}"`;
+    }
+    return text;
+  };
+
+  const buildSingleRowCsv = (form) => {
+    const headers = ['nombre', 'cedula', 'rol_jugador', 'codigo_universitario', 'semestre'];
+    const esEstudiante = form.rolJugador === 'ESTUDIANTE';
+    const row = [
+      form.nombre.trim(),
+      form.cedula.trim(),
+      form.rolJugador,
+      esEstudiante ? form.codigoUniversitario.trim() : '',
+      esEstudiante ? String(form.semestre).trim() : '',
+    ];
+    return `${headers.join(',')}\n${row.map(toCsvValue).join(',')}\n`;
+  };
+
+  const validateManual = () => {
+    if (!manualForm.nombre.trim()) {
+      return 'El nombre es obligatorio.';
+    }
+    if (!/^\d{6,15}$/.test(manualForm.cedula.trim())) {
+      return 'La cédula debe contener entre 6 y 15 dígitos.';
+    }
+    if (manualForm.rolJugador === 'ESTUDIANTE') {
+      if (!manualForm.codigoUniversitario.trim()) {
+        return 'El código estudiantil es obligatorio.';
+      }
+      if (!/^[1-9]\d*$/.test(String(manualForm.semestre).trim())) {
+        return 'El semestre debe ser un número válido.';
+      }
+    }
+    return '';
+  };
+
+  const handleManualSubmit = async (event) => {
+    event.preventDefault();
+    setManualError('');
+    const validation = validateManual();
+    if (validation) {
+      setManualError(validation);
+      return;
+    }
+
+    setManualSubmitting(true);
+    setError('');
+    setResult(null);
+    try {
+      const csv = buildSingleRowCsv(manualForm);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const filename = `jugador-${manualForm.cedula.trim()}.csv`;
+      const oneRowFile = new File([blob], filename, { type: 'text/csv' });
+      const data = await uploadCsv(oneRowFile, getToken());
+      setResult(data);
+      setManualOpen(false);
+    } catch (err) {
+      setManualError(err?.message || 'No fue posible agregar al jugador.');
+    } finally {
+      setManualSubmitting(false);
+    }
+  };
+
   return (
     <div className="view-stack">
       <article className="ds-panel csv-drop-panel">
@@ -442,6 +542,10 @@ function CsvView() {
 
           <button className="action-button primary" type="submit" disabled={uploading || !file}>
             {uploading ? 'Subiendo…' : 'Subir CSV'}
+          </button>
+
+          <button className="action-button ghost" type="button" onClick={openManual} disabled={uploading}>
+            Agregar usuario
           </button>
         </form>
 
@@ -499,6 +603,93 @@ function CsvView() {
           </div>
         )}
       </article>
+
+      {manualOpen && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-card">
+            <h3>Agregar jugador al padrón</h3>
+            <p>Este flujo agrega la cédula al padrón vía CSV. No crea cuenta de Appwrite.</p>
+
+            <form onSubmit={handleManualSubmit} className="modal-form">
+              <label className="form-label" htmlFor="manual-nombre">Nombre completo</label>
+              <input
+                id="manual-nombre"
+                className="form-input"
+                value={manualForm.nombre}
+                onChange={(e) => setManualForm((prev) => ({ ...prev, nombre: e.target.value }))}
+                placeholder="Nombre del jugador"
+                required
+              />
+
+              <label className="form-label" htmlFor="manual-cedula">Cédula</label>
+              <input
+                id="manual-cedula"
+                className="form-input"
+                inputMode="numeric"
+                value={manualForm.cedula}
+                onChange={(e) => setManualForm((prev) => ({ ...prev, cedula: e.target.value }))}
+                placeholder="1090000001"
+                required
+              />
+
+              <label className="form-label" htmlFor="manual-rol">Rol del jugador</label>
+              <select
+                id="manual-rol"
+                className="form-input"
+                value={manualForm.rolJugador}
+                onChange={(e) => setManualForm((prev) => ({ ...prev, rolJugador: e.target.value }))}
+              >
+                {ROLES_JUGADOR.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+
+              {manualForm.rolJugador === 'ESTUDIANTE' && (
+                <>
+                  <label className="form-label" htmlFor="manual-codigo">Código universitario</label>
+                  <input
+                    id="manual-codigo"
+                    className="form-input"
+                    value={manualForm.codigoUniversitario}
+                    onChange={(e) => setManualForm((prev) => ({ ...prev, codigoUniversitario: e.target.value }))}
+                    placeholder="1152381"
+                  />
+
+                  <label className="form-label" htmlFor="manual-semestre">Semestre</label>
+                  <input
+                    id="manual-semestre"
+                    className="form-input"
+                    inputMode="numeric"
+                    value={manualForm.semestre}
+                    onChange={(e) => setManualForm((prev) => ({ ...prev, semestre: e.target.value }))}
+                    placeholder="7"
+                  />
+                </>
+              )}
+
+              {manualError && <p className="banner banner-error">{manualError}</p>}
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="action-button ghost"
+                  onClick={() => setManualOpen(false)}
+                  disabled={manualSubmitting}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="action-button primary"
+                  disabled={manualSubmitting}
+                >
+                  {manualSubmitting ? 'Agregando…' : 'Agregar jugador'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
