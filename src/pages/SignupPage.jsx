@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
-import { solicitarRol } from '../api/auth';
+import { padronPreview, solicitarRol } from '../api/auth';
 import { appwriteCreateJwt, appwriteLogin, appwriteLogout, appwriteOAuthGoogle, appwriteSignup } from '../lib/appwrite';
 import { pickPrimaryRole, setSession } from '../utils/session';
 import '../styles/login.css';
@@ -45,11 +45,42 @@ function SignupPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [padron, setPadron] = useState({ checking: false, enPadron: null, nombre: '', esEstudiante: false });
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
+
+  // Lookup de cédula contra el padrón cuando el usuario elige JUGADOR.
+  // Si está en el padrón, ocultamos los campos académicos: el backend los
+  // toma del padrón ignorando lo que mande el frontend.
+  useEffect(() => {
+    if (form.tipoCuenta !== 'JUGADOR') {
+      setPadron({ checking: false, enPadron: null, nombre: '', esEstudiante: false });
+      return undefined;
+    }
+    const cedula = form.cedula.trim();
+    if (!/^\d{6,15}$/.test(cedula)) {
+      setPadron({ checking: false, enPadron: null, nombre: '', esEstudiante: false });
+      return undefined;
+    }
+    setPadron((p) => ({ ...p, checking: true }));
+    const handle = setTimeout(async () => {
+      try {
+        const data = await padronPreview(cedula);
+        setPadron({
+          checking: false,
+          enPadron: !!data?.enPadron,
+          nombre: data?.nombre || '',
+          esEstudiante: !!data?.esEstudiante,
+        });
+      } catch {
+        setPadron({ checking: false, enPadron: null, nombre: '', esEstudiante: false });
+      }
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [form.cedula, form.tipoCuenta]);
 
   const handleGoogle = async () => {
     setError('');
@@ -82,7 +113,10 @@ function SignupPage() {
       setError('La cédula debe contener entre 6 y 15 dígitos.');
       return;
     }
-    if (form.tipoCuenta === 'JUGADOR' && form.rolJugador === 'ESTUDIANTE') {
+    // Solo exigimos campos académicos cuando NO está en padrón: ahí los digita
+    // el usuario y el admin los valida. Si está en padrón, el backend los toma
+    // de la fuente oficial.
+    if (form.tipoCuenta === 'JUGADOR' && !padron.enPadron && form.rolJugador === 'ESTUDIANTE') {
       if (!form.codigoUniversitario.trim()) {
         setError('El código estudiantil es obligatorio.');
         return;
@@ -121,17 +155,20 @@ function SignupPage() {
 
       // 4. Una sola ruta para todos los roles: el backend decide APROBADO /
       //    PENDIENTE / PENDIENTE_VALIDACION según rol y padrón.
+      // Si el jugador está en padrón, no mandamos campos académicos: el backend
+      // los ignora y copia los oficiales. Solo aplican cuando NO está en padrón.
+      const enviarCamposJugador = form.tipoCuenta === 'JUGADOR' && !padron.enPadron;
       const data = await solicitarRol({
         appwriteJwt,
         cedula: form.cedula.trim(),
         rol: form.tipoCuenta,
-        rolJugador: form.tipoCuenta === 'JUGADOR' ? form.rolJugador : undefined,
+        rolJugador: enviarCamposJugador ? form.rolJugador : undefined,
         codigoUniversitario:
-          form.tipoCuenta === 'JUGADOR' && form.rolJugador === 'ESTUDIANTE'
+          enviarCamposJugador && form.rolJugador === 'ESTUDIANTE'
             ? form.codigoUniversitario.trim()
             : null,
         semestre:
-          form.tipoCuenta === 'JUGADOR' && form.rolJugador === 'ESTUDIANTE'
+          enviarCamposJugador && form.rolJugador === 'ESTUDIANTE'
             ? Number(form.semestre)
             : null,
         motivoSolicitud: form.motivoSolicitud.trim() || undefined,
@@ -243,7 +280,20 @@ function SignupPage() {
             </div>
           </div>
 
-          {form.tipoCuenta === 'JUGADOR' && (
+          {form.tipoCuenta === 'JUGADOR' && padron.enPadron === true && (
+            <div className="login-hint" style={{ background: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.35)' }}>
+              ✓ Encontramos tu información en el padrón oficial{padron.nombre ? `: ${padron.nombre}` : ''}.
+              Tu cuenta de jugador quedará activa de inmediato y tomaremos tu rol, código y semestre desde nuestros registros.
+            </div>
+          )}
+
+          {form.tipoCuenta === 'JUGADOR' && padron.enPadron === false && (
+            <div className="login-hint" style={{ background: 'rgba(250,204,21,0.08)', borderColor: 'rgba(250,204,21,0.35)' }}>
+              Tu cédula no aparece en el padrón. Completa los datos abajo: un administrador revisará tu caso.
+            </div>
+          )}
+
+          {form.tipoCuenta === 'JUGADOR' && !padron.enPadron && (
             <div className="form-group">
               <label className="form-label" htmlFor="rolJugador">Rol del jugador</label>
               <select
@@ -260,7 +310,7 @@ function SignupPage() {
             </div>
           )}
 
-          {form.tipoCuenta === 'JUGADOR' && form.rolJugador === 'ESTUDIANTE' && (
+          {form.tipoCuenta === 'JUGADOR' && !padron.enPadron && form.rolJugador === 'ESTUDIANTE' && (
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label" htmlFor="codigoUniversitario">Código estudiantil</label>
@@ -294,20 +344,22 @@ function SignupPage() {
             </div>
           )}
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="motivoSolicitud">
-              Comentario para el administrador (opcional)
-            </label>
-            <textarea
-              id="motivoSolicitud"
-              name="motivoSolicitud"
-              className="form-input"
-              rows={3}
-              placeholder="Explica tu situacion en caso de que creas que tú cédula podría no estar en la base de datos de jugadores. Ej: soy de Sistemas de la Unipamplona, me transferí este semestre."
-              value={form.motivoSolicitud}
-              onChange={handleChange}
-            />
-          </div>
+          {!(form.tipoCuenta === 'JUGADOR' && padron.enPadron) && (
+            <div className="form-group">
+              <label className="form-label" htmlFor="motivoSolicitud">
+                Comentario para el administrador (opcional)
+              </label>
+              <textarea
+                id="motivoSolicitud"
+                name="motivoSolicitud"
+                className="form-input"
+                rows={3}
+                placeholder="Explica tu situacion en caso de que creas que tú cédula podría no estar en la base de datos de jugadores. Ej: soy de Sistemas de la Unipamplona, me transferí este semestre."
+                value={form.motivoSolicitud}
+                onChange={handleChange}
+              />
+            </div>
+          )}
 
           <div className="form-group">
             <label className="form-label" htmlFor="contrasena">Contraseña (mínimo 8 caracteres)</label>

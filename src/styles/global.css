@@ -189,3 +189,24 @@ th {
     width: min(1240px, 95vw);
   }
 }
+
+/* ── Fix global de <select>: forzar dark mode en el popup nativo ─
+   Sin esto, Chrome/Edge/Firefox abren el dropdown con fondo blanco. */
+select {
+  color-scheme: dark;
+}
+
+select option,
+select optgroup {
+  background-color: var(--color-bg-elevated, #0d1429);
+  color: var(--color-fg, #ffffff);
+}
+
+select option:checked {
+  background-color: var(--color-brand-subtle, rgba(255, 85, 0, 0.18));
+  color: var(--color-fg, #ffffff);
+}
+
+select option:disabled {
+  color: var(--color-fg-disabled, #606070);
+}

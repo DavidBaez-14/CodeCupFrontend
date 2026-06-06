@@ -38,3 +38,9 @@ export function refresh(token) {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+export function padronPreview(cedula) {
+  return requestJson(`/api/auth/padron-preview/${encodeURIComponent(cedula)}`, {
+    method: 'GET',
+  });
+}
