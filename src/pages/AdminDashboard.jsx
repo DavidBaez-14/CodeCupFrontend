@@ -9,6 +9,7 @@ import { clearSession, getEmail, getNombre, getToken } from '../utils/session';
 import ConfigurarTorneoView from './admin/ConfigurarTorneoView';
 import GestionarEquiposView from './admin/GestionarEquiposView';
 import FixtureView from './admin/FixtureView';
+import UsuariosView from './admin/UsuariosView';
 import '../styles/admin.css';
 import '../styles/admin-torneo.css';
 
@@ -17,6 +18,7 @@ const SIDEBAR_GROUPS = [
     title: 'Identidad',
     items: [
       { id: 'pendientes', label: 'Solicitudes pendientes', live: true },
+      { id: 'usuarios', label: 'Usuarios', live: true },
       { id: 'csv', label: 'Cargar jugadores CSV', live: true },
       { id: 'buscar', label: 'Buscar jugador', live: true },
     ],
@@ -49,6 +51,7 @@ const SIDEBAR_GROUPS = [
 
 const VIEW_LABEL = {
   pendientes: 'Solicitudes pendientes',
+  usuarios: 'Usuarios',
   csv: 'Cargar jugadores CSV',
   buscar: 'Buscar jugador',
   torneo: 'Configurar torneo',
@@ -56,7 +59,7 @@ const VIEW_LABEL = {
   fixture: 'Fixture y cronograma',
 };
 
-const LIVE_VIEWS = ['pendientes', 'csv', 'buscar', 'torneo', 'equipos', 'fixture'];
+const LIVE_VIEWS = ['pendientes', 'usuarios', 'csv', 'buscar', 'torneo', 'equipos', 'fixture'];
 
 const ROL_LABEL = {
   ARBITRO: 'Árbitro',
@@ -161,6 +164,7 @@ function AdminDashboard() {
         </header>
 
         {activeView === 'pendientes' && <PendientesView />}
+        {activeView === 'usuarios' && <UsuariosView />}
         {activeView === 'csv' && <CsvView />}
         {activeView === 'buscar' && <BuscarJugadorView />}
         {activeView === 'torneo' && <ConfigurarTorneoView />}
