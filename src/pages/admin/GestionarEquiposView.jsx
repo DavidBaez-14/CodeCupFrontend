@@ -13,7 +13,7 @@ const ESTADO_LABEL = {
   PENDIENTE_PAGO: 'Pendiente de pago',
   APROBADO: 'Aprobado',
   RECHAZADO: 'Rechazado',
-  EXPULSADO: 'Expulsado',
+  EXPULSADO: 'Descalificado',
 };
 
 function GestionarEquiposView() {
@@ -118,7 +118,7 @@ function GestionarEquiposView() {
     const insc = inscripciones.find((i) => i.id === expulsion.eqtId);
     if (!insc) return;
     if (!expulsion.motivo.trim()) {
-      setError('Indica un motivo para la expulsión.');
+      setError('Indica un motivo para la descalificación.');
       return;
     }
     setActioningId(insc.id);
@@ -126,11 +126,11 @@ function GestionarEquiposView() {
     setFeedback('');
     try {
       await expulsarEquipo(insc.torneoId, insc.id, expulsion.motivo.trim(), getToken());
-      setFeedback(`"${insc.equipoNombre}" expulsado del torneo.`);
+      setFeedback(`"${insc.equipoNombre}" descalificado del torneo.`);
       setExpulsion({ open: false, eqtId: null, equipoNombre: '', motivo: '' });
       await loadInscripciones();
     } catch (err) {
-      setError(err?.message || 'No fue posible expulsar al equipo.');
+      setError(err?.message || 'No fue posible descalificar al equipo.');
     } finally {
       setActioningId(null);
     }
@@ -203,7 +203,7 @@ function GestionarEquiposView() {
                     </td>
                     <td className="muted">
                       {insc.estadoInscripcion === 'EXPULSADO'
-                        ? (insc.motivoExpulsion ? `Expulsión: ${insc.motivoExpulsion}` : '—')
+                        ? (insc.motivoExpulsion ? `Descalificación: ${insc.motivoExpulsion}` : '—')
                         : (insc.motivoRechazo || '—')}
                     </td>
                     <td className="actions-cell">
@@ -244,7 +244,7 @@ function GestionarEquiposView() {
                           disabled={actioningId === insc.id}
                           onClick={() => openExpulsion(insc)}
                         >
-                          Expulsar
+                          Descalificar
                         </button>
                       )}
                     </td>
@@ -295,11 +295,16 @@ function GestionarEquiposView() {
       {expulsion.open && (
         <div className="modal-backdrop" role="dialog" aria-modal="true">
           <div className="modal-card">
-            <h3>Expulsar equipo del torneo</h3>
+            <h3>Descalificar equipo del torneo</h3>
             <p>
-              Vas a expulsar a <strong>{expulsion.equipoNombre}</strong>. El motivo se mostrará al
-              delegado en la pestaña <em>Torneos</em>. Esta acción es irreversible.
+              Vas a descalificar a <strong>{expulsion.equipoNombre}</strong>. El motivo se mostrará al
+              delegado en la pestaña <em>Torneos</em>.
             </p>
+            <div className="banner banner-danger">
+              <strong>⚠ Esta acción es irreversible.</strong> El equipo quedará fuera de este
+              torneo de forma permanente. Sus partidos ya jugados se conservan; los pendientes
+              quedarán sin contraparte. El equipo sí podrá inscribirse en torneos futuros.
+            </div>
             <label className="form-label" htmlFor="motivo-expulsion-eqt">Motivo</label>
             <textarea
               id="motivo-expulsion-eqt"
@@ -324,7 +329,7 @@ function GestionarEquiposView() {
                 onClick={confirmarExpulsion}
                 disabled={actioningId === expulsion.eqtId}
               >
-                {actioningId === expulsion.eqtId ? 'Expulsando…' : 'Confirmar expulsión'}
+                {actioningId === expulsion.eqtId ? 'Descalificando…' : 'Confirmar descalificación'}
               </button>
             </div>
           </div>

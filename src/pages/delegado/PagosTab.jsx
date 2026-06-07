@@ -6,7 +6,7 @@ const ESTADO_LABEL = {
   PENDIENTE_PAGO: 'Pendiente de pago',
   APROBADO: 'Aprobado',
   RECHAZADO: 'Rechazado',
-  EXPULSADO: 'Expulsado',
+  EXPULSADO: 'Descalificado',
 };
 
 function chipClass(estado) {
