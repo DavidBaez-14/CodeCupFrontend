@@ -6,6 +6,7 @@ const ESTADO_INSC = {
   PENDIENTE_PAGO: { label: 'Pendiente de pago', cls: 'pending' },
   APROBADO: { label: 'Aprobado', cls: 'paid' },
   RECHAZADO: { label: 'Rechazado', cls: 'rejected' },
+  EXPULSADO: { label: 'Expulsado', cls: 'expelled' },
 };
 
 function TorneosTab({ tieneEquipo, onInscripcion }) {
@@ -86,6 +87,11 @@ function TorneosTab({ tieneEquipo, onInscripcion }) {
                       <span className="sep"></span>
                       <span>{t.estado}</span>
                     </div>
+                    {t.estadoInscripcion === 'EXPULSADO' && t.motivoExpulsion && (
+                      <div className="tc-expulsion-note">
+                        Tu equipo fue expulsado de este torneo. Motivo: {t.motivoExpulsion}
+                      </div>
+                    )}
                   </div>
                   <div className="tc-cta">
                     {inscrito ? (

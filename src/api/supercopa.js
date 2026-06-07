@@ -216,6 +216,24 @@ export function rechazarInscripcion(torneoId, equipoTorneoId, motivo, token) {
   );
 }
 
+export function habilitarInscripcion(torneoId, equipoTorneoId, token) {
+  return requestJson(
+    buildUrl(`/api/supercopa/admin/torneos/${torneoId}/inscripciones/${equipoTorneoId}/habilitar`),
+    { method: 'POST', headers: authHeader(token) },
+  );
+}
+
+export function expulsarEquipo(torneoId, equipoTorneoId, motivo, token) {
+  return requestJson(
+    buildUrl(`/api/supercopa/admin/torneos/${torneoId}/inscripciones/${equipoTorneoId}/expulsar`),
+    {
+      method: 'POST',
+      headers: authHeader(token, true),
+      body: JSON.stringify({ motivo }),
+    },
+  );
+}
+
 export function generarFixture(torneoId, token) {
   return requestJson(buildUrl(`/api/supercopa/admin/torneos/${torneoId}/fixture`), {
     method: 'POST',

@@ -468,6 +468,16 @@
   color: var(--color-fg-muted);
 }
 
+.action-button.warning {
+  background: rgba(250, 204, 21, 0.14);
+  border-color: rgba(250, 204, 21, 0.45);
+  color: #facc15;
+}
+.action-button.warning:hover:not(:disabled) {
+  background: rgba(250, 204, 21, 0.22);
+  border-color: rgba(250, 204, 21, 0.7);
+}
+
 /* ---------- Banners ---------- */
 .banner {
   font-size: var(--text-sm);

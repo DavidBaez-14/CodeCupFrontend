@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   aprobarInscripcion,
+  expulsarEquipo,
+  habilitarInscripcion,
   listInscripcionesTorneo,
   listTorneosAdmin,
   rechazarInscripcion,
@@ -11,6 +13,7 @@ const ESTADO_LABEL = {
   PENDIENTE_PAGO: 'Pendiente de pago',
   APROBADO: 'Aprobado',
   RECHAZADO: 'Rechazado',
+  EXPULSADO: 'Expulsado',
 };
 
 function GestionarEquiposView() {
@@ -22,6 +25,7 @@ function GestionarEquiposView() {
   const [feedback, setFeedback] = useState('');
   const [actioningId, setActioningId] = useState(null);
   const [rechazo, setRechazo] = useState({ open: false, eqtId: null, equipoNombre: '', motivo: '' });
+  const [expulsion, setExpulsion] = useState({ open: false, eqtId: null, equipoNombre: '', motivo: '' });
 
   useEffect(() => {
     listTorneosAdmin(getToken())
@@ -91,6 +95,47 @@ function GestionarEquiposView() {
     }
   };
 
+  const handleHabilitar = async (insc) => {
+    setActioningId(insc.id);
+    setError('');
+    setFeedback('');
+    try {
+      await habilitarInscripcion(insc.torneoId, insc.id, getToken());
+      setFeedback(`Inscripción de "${insc.equipoNombre}" habilitada. Vuelve a pendiente de pago.`);
+      await loadInscripciones();
+    } catch (err) {
+      setError(err?.message || 'No fue posible habilitar la inscripción.');
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const openExpulsion = (insc) => {
+    setExpulsion({ open: true, eqtId: insc.id, equipoNombre: insc.equipoNombre, motivo: '' });
+  };
+
+  const confirmarExpulsion = async () => {
+    const insc = inscripciones.find((i) => i.id === expulsion.eqtId);
+    if (!insc) return;
+    if (!expulsion.motivo.trim()) {
+      setError('Indica un motivo para la expulsión.');
+      return;
+    }
+    setActioningId(insc.id);
+    setError('');
+    setFeedback('');
+    try {
+      await expulsarEquipo(insc.torneoId, insc.id, expulsion.motivo.trim(), getToken());
+      setFeedback(`"${insc.equipoNombre}" expulsado del torneo.`);
+      setExpulsion({ open: false, eqtId: null, equipoNombre: '', motivo: '' });
+      await loadInscripciones();
+    } catch (err) {
+      setError(err?.message || 'No fue posible expulsar al equipo.');
+    } finally {
+      setActioningId(null);
+    }
+  };
+
   return (
     <div className="view-stack">
       <article className="ds-panel">
@@ -134,7 +179,7 @@ function GestionarEquiposView() {
                   <th>Delegado</th>
                   <th>Estado</th>
                   <th>Fecha</th>
-                  <th>Motivo rechazo</th>
+                  <th>Motivo</th>
                   <th aria-label="Acciones" />
                 </tr>
               </thead>
@@ -156,26 +201,50 @@ function GestionarEquiposView() {
                         })
                         : '—'}
                     </td>
-                    <td className="muted">{insc.motivoRechazo || '—'}</td>
+                    <td className="muted">
+                      {insc.estadoInscripcion === 'EXPULSADO'
+                        ? (insc.motivoExpulsion ? `Expulsión: ${insc.motivoExpulsion}` : '—')
+                        : (insc.motivoRechazo || '—')}
+                    </td>
                     <td className="actions-cell">
-                      {insc.estadoInscripcion !== 'APROBADO' && (
+                      {insc.estadoInscripcion === 'PENDIENTE_PAGO' && (
+                        <>
+                          <button
+                            type="button"
+                            className="action-button approve"
+                            disabled={actioningId === insc.id}
+                            onClick={() => handleAprobar(insc)}
+                          >
+                            {actioningId === insc.id ? '…' : 'Aprobar'}
+                          </button>
+                          <button
+                            type="button"
+                            className="action-button reject"
+                            disabled={actioningId === insc.id}
+                            onClick={() => openRechazo(insc)}
+                          >
+                            Rechazar
+                          </button>
+                        </>
+                      )}
+                      {insc.estadoInscripcion === 'RECHAZADO' && (
                         <button
                           type="button"
-                          className="action-button approve"
+                          className="action-button warning"
                           disabled={actioningId === insc.id}
-                          onClick={() => handleAprobar(insc)}
+                          onClick={() => handleHabilitar(insc)}
                         >
-                          {actioningId === insc.id ? '…' : 'Aprobar'}
+                          {actioningId === insc.id ? '…' : 'Habilitar'}
                         </button>
                       )}
-                      {insc.estadoInscripcion !== 'RECHAZADO' && (
+                      {insc.estadoInscripcion === 'APROBADO' && (
                         <button
                           type="button"
                           className="action-button reject"
                           disabled={actioningId === insc.id}
-                          onClick={() => openRechazo(insc)}
+                          onClick={() => openExpulsion(insc)}
                         >
-                          Rechazar
+                          Expulsar
                         </button>
                       )}
                     </td>
@@ -217,6 +286,45 @@ function GestionarEquiposView() {
                 disabled={actioningId === rechazo.eqtId}
               >
                 {actioningId === rechazo.eqtId ? 'Rechazando…' : 'Confirmar rechazo'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {expulsion.open && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-card">
+            <h3>Expulsar equipo del torneo</h3>
+            <p>
+              Vas a expulsar a <strong>{expulsion.equipoNombre}</strong>. El motivo se mostrará al
+              delegado en la pestaña <em>Torneos</em>. Esta acción es irreversible.
+            </p>
+            <label className="form-label" htmlFor="motivo-expulsion-eqt">Motivo</label>
+            <textarea
+              id="motivo-expulsion-eqt"
+              className="form-input"
+              rows={4}
+              value={expulsion.motivo}
+              onChange={(e) => setExpulsion((p) => ({ ...p, motivo: e.target.value }))}
+              placeholder="Ej: agresiones al árbitro, incumplimiento del reglamento."
+            />
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="action-button ghost"
+                onClick={() => setExpulsion({ open: false, eqtId: null, equipoNombre: '', motivo: '' })}
+                disabled={actioningId === expulsion.eqtId}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="action-button reject"
+                onClick={confirmarExpulsion}
+                disabled={actioningId === expulsion.eqtId}
+              >
+                {actioningId === expulsion.eqtId ? 'Expulsando…' : 'Confirmar expulsión'}
               </button>
             </div>
           </div>

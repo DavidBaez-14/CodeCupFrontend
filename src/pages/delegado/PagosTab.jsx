@@ -6,7 +6,15 @@ const ESTADO_LABEL = {
   PENDIENTE_PAGO: 'Pendiente de pago',
   APROBADO: 'Aprobado',
   RECHAZADO: 'Rechazado',
+  EXPULSADO: 'Expulsado',
 };
+
+function chipClass(estado) {
+  if (estado === 'APROBADO') return 'paid';
+  if (estado === 'PENDIENTE_PAGO') return 'pending';
+  if (estado === 'EXPULSADO') return 'expelled';
+  return 'rejected';
+}
 
 function PagosTab() {
   const [inscripciones, setInscripciones] = useState([]);
@@ -66,6 +74,7 @@ function PagosTab() {
             {inscripciones.map((i) => {
               const esPendiente = i.estadoInscripcion === 'PENDIENTE_PAGO';
               const esAprobado = i.estadoInscripcion === 'APROBADO';
+              const esRechazado = i.estadoInscripcion === 'RECHAZADO';
               return (
                 <div key={i.id} className="payment-row">
                   <div className={`payment-row-icon ${esAprobado ? 'paid' : 'pending'}`}>
@@ -76,11 +85,11 @@ function PagosTab() {
                     <div className="payment-row-sub">
                       Equipo: {i.equipoNombre} · {i.fechaInscripcion?.slice(0, 10)}
                     </div>
-                    {i.motivoRechazo && (
+                    {esRechazado && i.motivoRechazo && (
                       <div className="payment-row-sub muted">Motivo: {i.motivoRechazo}</div>
                     )}
                   </div>
-                  <span className={`payment-row-chip ${esAprobado ? 'paid' : esPendiente ? 'pending' : 'rejected'}`}>
+                  <span className={`payment-row-chip ${chipClass(i.estadoInscripcion)}`}>
                     {ESTADO_LABEL[i.estadoInscripcion] || i.estadoInscripcion}
                   </span>
                   {esPendiente ? (

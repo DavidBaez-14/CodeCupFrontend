@@ -147,6 +147,21 @@
   color: #ef4444;
   border: 1px solid rgba(239,68,68,0.3);
 }
+.tc-status-chip.expelled {
+  background: rgba(127,29,29,0.25);
+  color: #fca5a5;
+  border: 1px solid rgba(239,68,68,0.55);
+}
+.tc-expulsion-note {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #fca5a5;
+  background: rgba(127,29,29,0.18);
+  border-left: 3px solid #ef4444;
+  padding: 8px 12px;
+  border-radius: 0 4px 4px 0;
+}
 
 /* Team header */
 .team-header {
@@ -318,6 +333,7 @@
 .payment-row-chip.paid { background: rgba(34,197,94,0.12); color: #22c55e; }
 .payment-row-chip.pending { background: rgba(250,204,21,0.12); color: #facc15; }
 .payment-row-chip.rejected { background: rgba(239,68,68,0.12); color: #ef4444; }
+.payment-row-chip.expelled { background: rgba(127,29,29,0.25); color: #fca5a5; border: 1px solid rgba(239,68,68,0.55); }
 
 .banner-warning {
   background: rgba(250,204,21,0.1);

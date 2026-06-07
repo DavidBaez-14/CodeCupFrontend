@@ -65,6 +65,12 @@
   color: #ef4444;
   border: 1px solid rgba(239,68,68,0.3);
 }
+.status-pill.estado-expulsado {
+  background: rgba(127,29,29,0.25);
+  color: #fca5a5;
+  border: 1px solid rgba(239,68,68,0.55);
+  font-weight: 700;
+}
 .status-pill.estado-programado {
   background: rgba(255,255,255,0.06);
   color: var(--color-fg-muted);
