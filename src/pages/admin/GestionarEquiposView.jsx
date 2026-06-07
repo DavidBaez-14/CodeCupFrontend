@@ -301,9 +301,11 @@ function GestionarEquiposView() {
               delegado en la pestaña <em>Torneos</em>.
             </p>
             <div className="banner banner-danger">
-              <strong>⚠ Esta acción es irreversible.</strong> El equipo quedará fuera de este
-              torneo de forma permanente. Sus partidos ya jugados se conservan; los pendientes
-              quedarán sin contraparte. El equipo sí podrá inscribirse en torneos futuros.
+              <strong>⚠ Esta acción es irreversible.</strong>
+              <p>
+              El equipo quedará fuera de este torneo de forma permanente. Su historial de partidos ya jugados se conserva y el fixture se actualiza
+              automáticamente. 
+              </p>
             </div>
             <label className="form-label" htmlFor="motivo-expulsion-eqt">Motivo</label>
             <textarea

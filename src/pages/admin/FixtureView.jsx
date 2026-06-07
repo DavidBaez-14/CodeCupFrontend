@@ -15,6 +15,7 @@ const STATUS_MAP = {
   FINALIZADO: 'played',
   APLAZADO: 'upcoming',
   WO: 'played',
+  DESCANSO: 'descanso',
 };
 
 function FixtureView() {
@@ -169,7 +170,7 @@ function FixtureView() {
                         key={p.id}
                         match={match}
                         hora={hora}
-                        onOpen={() => setOpenPartido(p)}
+                        onOpen={p.estado === 'DESCANSO' ? null : () => setOpenPartido(p)}
                       />
                     );
                   })}

@@ -350,6 +350,33 @@
 .match-card.played::before   { background: rgba(255, 255, 255, 0.12); }
 .match-card.upcoming::before { background: #ff5500; box-shadow: 0 0 8px rgba(255, 85, 0, 0.5); }
 .match-card.live::before     { background: #22c55e; box-shadow: 0 0 10px rgba(34, 197, 94, 0.6); }
+.match-card.descanso::before { background: rgba(239, 68, 68, 0.4); }
+.match-card.descanso         { opacity: 0.6; }
+.match-card.descanso:disabled { cursor: not-allowed; }
+
+.match-card-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.match-descanso-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 1.4;
+  color: #fca5a5;
+  background: rgba(127, 29, 29, 0.18);
+  border-left: 3px solid #ef4444;
+  padding: 6px 10px;
+  border-radius: 0 4px 4px 0;
+}
+.match-descanso-icon {
+  font-size: 13px;
+  line-height: 1;
+  margin-top: 1px;
+}
 .match-card:hover {
   border-color: rgba(255, 85, 0, 0.2);
   background: var(--color-bg-elevated);
@@ -401,6 +428,7 @@
 .match-status-chip.played   { background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.3); }
 .match-status-chip.upcoming { background: rgba(255, 85, 0, 0.15);    color: #ff5500; border: 1px solid rgba(255, 85, 0, 0.3); }
 .match-status-chip.live     { background: rgba(34, 197, 94, 0.15);   color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.25); }
+.match-status-chip.descanso { background: rgba(239, 68, 68, 0.12);   color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
 .match-date {
   font-family: var(--font-body);
   font-size: 10px; color: rgba(255, 255, 255, 0.25);
