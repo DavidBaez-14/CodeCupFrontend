@@ -1,13 +1,25 @@
 import { useState } from 'react';
 
+const ROLES_JUGADOR = [
+  { value: 'ESTUDIANTE', label: 'Estudiante' },
+  { value: 'GRADUADO', label: 'Graduado' },
+  { value: 'PROFESOR', label: 'Profesor' },
+  { value: 'ADMINISTRATIVO', label: 'Administrativo' },
+];
+
+const EMPTY_FORM = {
+  nombre: '',
+  correo: '',
+  cedula: '',
+  rolInicial: 'DELEGADO',
+  rolJugador: 'ESTUDIANTE',
+  codigoUniversitario: '',
+  semestre: '',
+  motivo: '',
+};
+
 function CreateUserModal({ open, onClose, onSubmit }) {
-  const [form, setForm] = useState({
-    nombre: '',
-    correo: '',
-    cedula: '',
-    rolInicial: 'DELEGADO',
-    motivo: '',
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [created, setCreated] = useState(null);
@@ -15,8 +27,13 @@ function CreateUserModal({ open, onClose, onSubmit }) {
 
   if (!open) return null;
 
+  // Regla del backend: todo DELEGADO tambien es JUGADOR. Le pedimos al admin
+  // los datos academicos para poder insertar en padron y crear el CuentaRol JUGADOR.
+  const esDelegado = form.rolInicial === 'DELEGADO';
+  const esEstudiante = form.rolJugador === 'ESTUDIANTE';
+
   const reset = () => {
-    setForm({ nombre: '', correo: '', cedula: '', rolInicial: 'DELEGADO', motivo: '' });
+    setForm(EMPTY_FORM);
     setError('');
     setCreated(null);
     setCopied(false);
@@ -34,15 +51,31 @@ function CreateUserModal({ open, onClose, onSubmit }) {
       setError('Completa todos los campos obligatorios.');
       return;
     }
+    if (esDelegado && esEstudiante) {
+      if (!form.codigoUniversitario.trim()) {
+        setError('El código estudiantil es obligatorio.');
+        return;
+      }
+      if (!/^[1-9]\d*$/.test(String(form.semestre).trim())) {
+        setError('El semestre debe ser un número válido.');
+        return;
+      }
+    }
     setSubmitting(true);
     try {
-      const data = await onSubmit({
+      const payload = {
         nombre: form.nombre.trim(),
         correo: form.correo.trim(),
         cedula: form.cedula.trim(),
         rolInicial: form.rolInicial,
         motivo: form.motivo.trim(),
-      });
+      };
+      if (esDelegado) {
+        payload.rolJugador = form.rolJugador;
+        payload.codigoUniversitario = esEstudiante ? form.codigoUniversitario.trim() : null;
+        payload.semestre = esEstudiante ? Number(form.semestre) : null;
+      }
+      const data = await onSubmit(payload);
       setCreated(data);
     } catch (err) {
       setError(err?.message || 'No fue posible crear la cuenta.');
@@ -132,8 +165,48 @@ function CreateUserModal({ open, onClose, onSubmit }) {
                 </select>
                 <div className="u-field-hint">
                   El rol "Administrador" se asigna luego desde la tabla con doble confirmación.
+                  {esDelegado && ' Al crear un delegado también se le asigna el rol de jugador.'}
                 </div>
               </div>
+              {esDelegado && (
+                <div className="u-field">
+                  <label className="u-field-label">Rol del jugador<span className="req">*</span></label>
+                  <select
+                    className="u-select"
+                    value={form.rolJugador}
+                    onChange={(e) => setForm((p) => ({ ...p, rolJugador: e.target.value }))}
+                  >
+                    {ROLES_JUGADOR.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {esDelegado && esEstudiante && (
+                <>
+                  <div className="u-field">
+                    <label className="u-field-label">Código estudiantil<span className="req">*</span></label>
+                    <input
+                      className="u-input"
+                      value={form.codigoUniversitario}
+                      onChange={(e) => setForm((p) => ({ ...p, codigoUniversitario: e.target.value }))}
+                      placeholder="1155404..."
+                    />
+                  </div>
+                  <div className="u-field">
+                    <label className="u-field-label">Semestre actual<span className="req">*</span></label>
+                    <input
+                      className="u-input"
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={form.semestre}
+                      onChange={(e) => setForm((p) => ({ ...p, semestre: e.target.value }))}
+                      placeholder="7"
+                    />
+                  </div>
+                </>
+              )}
               <div className="u-field">
                 <label className="u-field-label">Motivo<span className="req">*</span></label>
                 <textarea

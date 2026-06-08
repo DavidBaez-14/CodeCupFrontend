@@ -29,6 +29,14 @@ const ROLE_LABEL = {
   JUGADOR: 'Jugador',
 };
 
+// Orden en que se renderizan los iconos de roles en la barra superior.
+const ROLE_PRIORITY = {
+  ADMINISTRADOR: 0,
+  DELEGADO: 1,
+  JUGADOR: 2,
+  ARBITRO: 3,
+};
+
 const REQUESTABLE_ROLES = [
   { value: 'JUGADOR', label: 'Jugador' },
   { value: 'DELEGADO', label: 'Delegado' },
@@ -98,7 +106,9 @@ const ROLE_ICONS = {
 function normalizeRoleList(list) {
   if (!Array.isArray(list)) return [];
   const mapped = list.map((item) => normalizeRole(item)).filter(Boolean);
-  return Array.from(new Set(mapped));
+  const unicos = Array.from(new Set(mapped));
+  unicos.sort((a, b) => (ROLE_PRIORITY[a] ?? 99) - (ROLE_PRIORITY[b] ?? 99));
+  return unicos;
 }
 
 function RoleHeaderActions({ allowRoleRequest = true }) {

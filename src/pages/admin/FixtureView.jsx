@@ -7,7 +7,7 @@ import {
   listTorneosAdmin,
 } from '../../api/supercopa';
 import { getToken } from '../../utils/session';
-import EventosPartidoModal from './EventosPartidoModal';
+import PartidoEventosModal from '../../components/supercopa/PartidoEventosModal';
 
 const STATUS_MAP = {
   PROGRAMADO: 'upcoming',
@@ -182,10 +182,11 @@ function FixtureView() {
       </article>
 
       {openPartido && (
-        <EventosPartidoModal
+        <PartidoEventosModal
           partido={openPartido}
           onClose={() => setOpenPartido(null)}
           onPartidoCerrado={handlePartidoCerrado}
+          canReopen={true}
         />
       )}
     </div>

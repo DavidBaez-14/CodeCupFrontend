@@ -387,6 +387,12 @@
   border-radius: var(--radius-full);
   border: 1px solid transparent;
 }
+/* Apila varios pills (caso DELEGADO + JUGADOR en la misma fila). */
+.role-pill-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
 .role-pill.role-administrador,
 .role-pill.role-administrativo { background: rgba(29, 111, 245, 0.16); color: #93c5fd; border-color: rgba(29, 111, 245, 0.32); }
 .role-pill.role-arbitro { background: var(--color-brand-subtle); color: #ffb582; border-color: var(--color-border-brand); }

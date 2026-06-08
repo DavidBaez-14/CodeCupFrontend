@@ -4,10 +4,11 @@ import {
   crearEvento,
   eliminarEvento,
   listEventosPartido,
-  listMiembrosEquipoTorneoAdmin,
+  listAlineacionPartido,
+  reabrirPartido,
 } from '../../api/supercopa';
 import { getToken } from '../../utils/session';
-import MatchTimeline from '../../components/supercopa/MatchTimeline';
+import MatchTimeline from './MatchTimeline';
 
 const TIPOS = ['GOL', 'AMARILLA', 'AZUL', 'ROJA'];
 
@@ -41,29 +42,31 @@ function buildTimelineEvents(eventos, partido) {
   });
 }
 
-function EventosPartidoModal({ partido, onClose, onPartidoCerrado }) {
+function PartidoEventosModal({ partido, onClose, onPartidoCerrado, canReopen }) {
   const [eventos, setEventos] = useState([]);
-  const [miembrosLocal, setMiembrosLocal] = useState([]);
-  const [miembrosVisitante, setMiembrosVisitante] = useState([]);
+  const [jugadoresLocal, setJugadoresLocal] = useState([]);
+  const [jugadoresVisitante, setJugadoresVisitante] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState('');
   const [actioning, setActioning] = useState(false);
   const [form, setForm] = useState({ side: 'local', cedula: '', tipo: 'GOL' });
 
+  const cerrado = partido?.estado === 'FINALIZADO' || partido?.estado === 'WO';
+
   const recargar = useCallback(async () => {
     if (!partido) return;
     setLoading(true);
     setError('');
     try {
-      const [evts, miemL, miemV] = await Promise.all([
+      const [evts, ali] = await Promise.all([
         listEventosPartido(partido.id, getToken()),
-        listMiembrosEquipoTorneoAdmin(partido.localEquipoTorneoId, getToken()).catch(() => []),
-        listMiembrosEquipoTorneoAdmin(partido.visitanteEquipoTorneoId, getToken()).catch(() => []),
+        listAlineacionPartido(partido.id, getToken()).catch(() => []),
       ]);
       setEventos(Array.isArray(evts) ? evts : []);
-      setMiembrosLocal(Array.isArray(miemL) ? miemL : []);
-      setMiembrosVisitante(Array.isArray(miemV) ? miemV : []);
+      const arr = Array.isArray(ali) ? ali : [];
+      setJugadoresLocal(arr.filter((j) => j.equipoTorneoId === partido.localEquipoTorneoId && j.jugo));
+      setJugadoresVisitante(arr.filter((j) => j.equipoTorneoId === partido.visitanteEquipoTorneoId && j.jugo));
     } catch (err) {
       setError(err?.message || 'No fue posible cargar los eventos.');
     } finally {
@@ -73,8 +76,7 @@ function EventosPartidoModal({ partido, onClose, onPartidoCerrado }) {
 
   useEffect(() => { recargar(); }, [recargar]);
 
-  const cerradoYa = partido?.estado === 'FINALIZADO' || partido?.estado === 'WO';
-  const miembros = form.side === 'local' ? miembrosLocal : miembrosVisitante;
+  const jugadores = form.side === 'local' ? jugadoresLocal : jugadoresVisitante;
   const equipoTorneoId = form.side === 'local'
     ? partido?.localEquipoTorneoId
     : partido?.visitanteEquipoTorneoId;
@@ -89,7 +91,7 @@ function EventosPartidoModal({ partido, onClose, onPartidoCerrado }) {
     return map;
   }, [eventos]);
 
-  const handleEliminarFromTimeline = (tlEvent) => {
+  const handleDeleteFromTimeline = (tlEvent) => {
     const original = eventoIndex.get(tlEvent.id);
     if (original) handleEliminar(original);
   };
@@ -148,6 +150,20 @@ function EventosPartidoModal({ partido, onClose, onPartidoCerrado }) {
     }
   };
 
+  const handleReabrir = async () => {
+    if (!confirm('¿Reabrir el partido? Volverá a estado EN CURSO.')) return;
+    setActioning(true);
+    setError('');
+    try {
+      const partidoReabierto = await reabrirPartido(partido.id, getToken());
+      onPartidoCerrado?.(partidoReabierto);
+    } catch (err) {
+      setError(err?.message || 'No fue posible reabrir el partido.');
+    } finally {
+      setActioning(false);
+    }
+  };
+
   if (!partido) return null;
 
   return (
@@ -168,7 +184,9 @@ function EventosPartidoModal({ partido, onClose, onPartidoCerrado }) {
         {feedback && <p className="banner banner-success">{feedback}</p>}
         {error && <p className="banner banner-error">{error}</p>}
 
-        {!cerradoYa && (
+        {cerrado ? (
+          <p className="banner banner-info">Partido {partido.estado} — solo lectura.</p>
+        ) : (
           <form className="evento-form" onSubmit={handleAgregar}>
             <div className="form-row">
               <label className="form-field">
@@ -183,7 +201,7 @@ function EventosPartidoModal({ partido, onClose, onPartidoCerrado }) {
                 </select>
               </label>
               <label className="form-field">
-                <span className="form-label">Jugador</span>
+                <span className="form-label">Jugador (en cancha)</span>
                 <select
                   className="form-input"
                   value={form.cedula}
@@ -191,9 +209,9 @@ function EventosPartidoModal({ partido, onClose, onPartidoCerrado }) {
                   required
                 >
                   <option value="">— Selecciona —</option>
-                  {miembros.map((m) => (
-                    <option key={m.cedula} value={m.cedula}>
-                      {m.nombre} ({m.cedula})
+                  {jugadores.map((j) => (
+                    <option key={j.cedula} value={j.cedula}>
+                      {j.jugadorNombre || j.cedula}
                     </option>
                   ))}
                 </select>
@@ -223,12 +241,23 @@ function EventosPartidoModal({ partido, onClose, onPartidoCerrado }) {
             <MatchTimeline
               events={timelineEvents}
               status="played"
-              onEventDelete={!cerradoYa && !actioning ? handleEliminarFromTimeline : undefined}
+              onEventDelete={!cerrado && !actioning ? handleDeleteFromTimeline : undefined}
             />
           )}
         </div>
 
-        {!cerradoYa && (
+        {cerrado && canReopen ? (
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="action-button approve"
+              onClick={handleReabrir}
+              disabled={actioning}
+            >
+              {actioning ? '…' : 'Reabrir partido'}
+            </button>
+          </div>
+        ) : !cerrado ? (
           <div className="modal-actions">
             <button
               type="button"
@@ -239,10 +268,10 @@ function EventosPartidoModal({ partido, onClose, onPartidoCerrado }) {
               {actioning ? '…' : 'Cerrar partido'}
             </button>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
 }
 
-export default EventosPartidoModal;
+export default PartidoEventosModal;

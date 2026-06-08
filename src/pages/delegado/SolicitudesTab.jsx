@@ -26,7 +26,7 @@ function formatAltura(value) {
   return `${value} cm`;
 }
 
-function SolicitudesTab() {
+function SolicitudesTab({ toast }) {
   const [solicitudes, setSolicitudes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -56,6 +56,7 @@ function SolicitudesTab() {
     try {
       await aprobarSolicitud(s.id, getToken());
       setSolicitudes((prev) => prev.filter((x) => x.id !== s.id));
+      toast?.(`Solicitud de ${s.nombre || s.cedula} aprobada`);
       setFeedback(`Solicitud de ${s.nombre || s.cedula} aprobada.`);
     } catch (err) {
       setError(err?.message || 'No fue posible aprobar la solicitud.');
@@ -79,6 +80,7 @@ function SolicitudesTab() {
     try {
       await rechazarSolicitud(rechazo.id, rechazo.motivo.trim(), getToken());
       setSolicitudes((prev) => prev.filter((x) => x.id !== rechazo.id));
+      toast?.(`Solicitud de ${rechazo.nombre} rechazada`);
       setFeedback(`Solicitud de ${rechazo.nombre} rechazada.`);
       setRechazo({ open: false, id: null, nombre: '', motivo: '' });
     } catch (err) {

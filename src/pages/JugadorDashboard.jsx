@@ -1,18 +1,25 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
+import PerfilDeportivoGuard from '../components/PerfilDeportivoGuard';
 import RoleHeaderActions from '../components/RoleHeaderActions';
 import {
+  actualizarMiPerfil,
   getMiPerfil,
   getMisSolicitudes,
   listEquiposPorTorneo,
   listTorneos,
   solicitarIngreso,
 } from '../api/supercopa';
+import {
+  ALTURA_MAX,
+  ALTURA_MIN,
+  PIERNAS,
+  POSICIONES,
+} from '../constants/perfilDeportivo';
 import { TEAM_COLORS } from '../data/supercopa';
 import { appwriteLogout } from '../lib/appwrite';
 import { clearSession, getNombre, getToken } from '../utils/session';
-import SolicitudIngresoModal from './jugador/SolicitudIngresoModal';
 import '../styles/admin.css';
 import '../styles/role-shell.css';
 import '../styles/jugador.css';
@@ -38,9 +45,8 @@ function JugadorDashboard() {
   const [loadingEquipos, setLoadingEquipos] = useState(false);
   const [errorEquipos, setErrorEquipos] = useState('');
   const [solicitudMsg, setSolicitudMsg] = useState('');
-  const [modalEquipo, setModalEquipo] = useState(null);
-  const [enviando, setEnviando] = useState(false);
-  const [errorModal, setErrorModal] = useState('');
+  const [solicitandoId, setSolicitandoId] = useState(null);
+  const [errorSolicitud, setErrorSolicitud] = useState('');
   // map: equipoTorneoId -> estado ('PENDIENTE' | 'APROBADA' | 'RECHAZADA')
   const [estadosSolicitud, setEstadosSolicitud] = useState({});
 
@@ -48,6 +54,10 @@ function JugadorDashboard() {
   const [perfil, setPerfil] = useState(null);
   const [loadingPerfil, setLoadingPerfil] = useState(false);
   const [errorPerfil, setErrorPerfil] = useState('');
+  const [perfilForm, setPerfilForm] = useState({ alturaCm: '', piernaHabil: 'DERECHA', posicion: 'MEDIOCAMPISTA' });
+  const [guardandoPerfil, setGuardandoPerfil] = useState(false);
+  const [perfilMsg, setPerfilMsg] = useState('');
+  const [perfilErrorEdit, setPerfilErrorEdit] = useState('');
 
   const handleLogout = async () => {
     clearSession();
@@ -106,30 +116,21 @@ function JugadorDashboard() {
     return () => { alive = false; };
   }, [token]);
 
-  const handleAbrirModal = (equipo) => {
+  // El perfil deportivo (altura/pierna/posicion) ya se captura una sola vez
+  // via PerfilDeportivoGuard al entrar al dashboard; aqui solo enviamos el
+  // equipoTorneoId, sin modal intermedio.
+  const handleSolicitar = async (equipo) => {
     setSolicitudMsg('');
-    setErrorModal('');
-    setModalEquipo(equipo);
-  };
-
-  const handleConfirmar = async (datosPersonales) => {
-    if (!modalEquipo) return;
-    setEnviando(true);
-    setErrorModal('');
+    setErrorSolicitud('');
+    setSolicitandoId(equipo.equipoTorneoId);
     try {
-      await solicitarIngreso({
-        equipoTorneoId: modalEquipo.equipoTorneoId,
-        alturaCm: datosPersonales.alturaCm,
-        piernaHabil: datosPersonales.piernaHabil,
-        posicion: datosPersonales.posicion,
-      }, token);
-      setEstadosSolicitud((prev) => ({ ...prev, [String(modalEquipo.equipoTorneoId)]: 'PENDIENTE' }));
-      setSolicitudMsg(`Solicitud enviada para "${modalEquipo.equipoNombre}". Espera aprobación del delegado.`);
-      setModalEquipo(null);
+      await solicitarIngreso({ equipoTorneoId: equipo.equipoTorneoId }, token);
+      setEstadosSolicitud((prev) => ({ ...prev, [String(equipo.equipoTorneoId)]: 'PENDIENTE' }));
+      setSolicitudMsg(`Solicitud enviada para "${equipo.equipoNombre}". Espera aprobación del delegado.`);
     } catch (err) {
-      setErrorModal(err?.message || 'No fue posible enviar la solicitud.');
+      setErrorSolicitud(err?.message || 'No fue posible enviar la solicitud.');
     } finally {
-      setEnviando(false);
+      setSolicitandoId(null);
     }
   };
 
@@ -138,13 +139,49 @@ function JugadorDashboard() {
     let alive = true;
     setLoadingPerfil(true);
     getMiPerfil(token)
-      .then((data) => { if (alive) setPerfil(data || null); })
+      .then((data) => {
+        if (!alive) return;
+        setPerfil(data || null);
+        if (data) {
+          setPerfilForm({
+            alturaCm: data.alturaCm != null ? String(data.alturaCm) : '',
+            piernaHabil: data.piernaHabil || 'DERECHA',
+            posicion: data.posicion || 'MEDIOCAMPISTA',
+          });
+        }
+      })
       .catch((err) => { if (alive) setErrorPerfil(err?.message || 'No fue posible cargar tu perfil.'); })
       .finally(() => { if (alive) setLoadingPerfil(false); });
     return () => { alive = false; };
   }, [token, activeTab]);
 
+  const handleGuardarPerfil = async (event) => {
+    event.preventDefault();
+    setPerfilMsg('');
+    setPerfilErrorEdit('');
+    const altura = Number(perfilForm.alturaCm);
+    if (!Number.isFinite(altura) || altura < ALTURA_MIN || altura > ALTURA_MAX) {
+      setPerfilErrorEdit(`Altura debe estar entre ${ALTURA_MIN} y ${ALTURA_MAX} cm.`);
+      return;
+    }
+    setGuardandoPerfil(true);
+    try {
+      const actualizado = await actualizarMiPerfil({
+        alturaCm: altura,
+        piernaHabil: perfilForm.piernaHabil,
+        posicion: perfilForm.posicion,
+      }, token);
+      setPerfil(actualizado);
+      setPerfilMsg('Perfil deportivo actualizado.');
+    } catch (err) {
+      setPerfilErrorEdit(err?.message || 'No fue posible actualizar el perfil.');
+    } finally {
+      setGuardandoPerfil(false);
+    }
+  };
+
   return (
+    <PerfilDeportivoGuard>
     <main className="role-shell jugador-shell">
       <header className="role-topbar jugador-topbar">
         <div className="role-brand">
@@ -205,6 +242,7 @@ function JugadorDashboard() {
             </div>
 
             {errorEquipos && <p className="banner banner-error">{errorEquipos}</p>}
+            {errorSolicitud && <p className="banner banner-error">{errorSolicitud}</p>}
             {solicitudMsg && <p className="banner banner-success">{solicitudMsg}</p>}
 
             {loadingEquipos ? (
@@ -216,8 +254,10 @@ function JugadorDashboard() {
                 {equipos.map((eq) => {
                   const estado = estadosSolicitud[String(eq.equipoTorneoId)];
                   const locked = estado === 'PENDIENTE' || estado === 'APROBADA';
+                  const enviandoEste = solicitandoId === eq.equipoTorneoId;
 
-                  const btnLabel = estado === 'APROBADA' ? '✓ Aprobado'
+                  const btnLabel = enviandoEste ? 'Enviando…'
+                    : estado === 'APROBADA' ? '✓ Aprobado'
                     : estado === 'PENDIENTE' ? '⏳ Pendiente'
                     : estado === 'RECHAZADA' ? 'Reintentar'
                     : 'Solicitar ingreso';
@@ -248,8 +288,8 @@ function JugadorDashboard() {
                         className="action-button ghost"
                         type="button"
                         style={btnStyle}
-                        disabled={locked}
-                        onClick={() => handleAbrirModal(eq)}
+                        disabled={locked || enviandoEste}
+                        onClick={() => handleSolicitar(eq)}
                       >
                         {btnLabel}
                       </button>
@@ -273,6 +313,55 @@ function JugadorDashboard() {
               <p className="empty-state">Cargando tu perfil…</p>
             ) : perfil ? (
               <div className="perfil-stack">
+                <form onSubmit={handleGuardarPerfil} className="perfil-block">
+                  <h4>Datos deportivos</h4>
+                  <div className="form-row">
+                    <label className="form-field">
+                      <span className="form-label">Altura (cm)</span>
+                      <input
+                        type="number"
+                        min={ALTURA_MIN}
+                        max={ALTURA_MAX}
+                        className="form-input"
+                        value={perfilForm.alturaCm}
+                        onChange={(e) => setPerfilForm((p) => ({ ...p, alturaCm: e.target.value }))}
+                        required
+                      />
+                    </label>
+                    <label className="form-field">
+                      <span className="form-label">Pierna hábil</span>
+                      <select
+                        className="form-input"
+                        value={perfilForm.piernaHabil}
+                        onChange={(e) => setPerfilForm((p) => ({ ...p, piernaHabil: e.target.value }))}
+                      >
+                        {PIERNAS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="form-field">
+                      <span className="form-label">Posición</span>
+                      <select
+                        className="form-input"
+                        value={perfilForm.posicion}
+                        onChange={(e) => setPerfilForm((p) => ({ ...p, posicion: e.target.value }))}
+                      >
+                        {POSICIONES.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  {perfilErrorEdit && <p className="banner banner-error">{perfilErrorEdit}</p>}
+                  {perfilMsg && <p className="banner banner-success">{perfilMsg}</p>}
+                  <div className="modal-actions">
+                    <button type="submit" className="action-button primary" disabled={guardandoPerfil}>
+                      {guardandoPerfil ? 'Guardando…' : 'Guardar cambios'}
+                    </button>
+                  </div>
+                </form>
+
                 <div className="perfil-summary">
                   <div>
                     <h3>{perfil.nombre || nombre}</h3>
@@ -392,16 +481,8 @@ function JugadorDashboard() {
         )}
       </section>
 
-      {modalEquipo && (
-        <SolicitudIngresoModal
-          equipo={modalEquipo}
-          sending={enviando}
-          error={errorModal}
-          onCancel={() => { setModalEquipo(null); setErrorModal(''); }}
-          onConfirm={handleConfirmar}
-        />
-      )}
     </main>
+    </PerfilDeportivoGuard>
   );
 }
 

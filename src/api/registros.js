@@ -15,6 +15,24 @@ export function aprobarRol(cuentaRolId, token) {
   });
 }
 
+export function aprobarTodosCuenta(cuentaId, token) {
+  return requestJson(`/api/admin/roles/cuenta/${encodeURIComponent(cuentaId)}/aprobar-todos`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function rechazarTodosCuenta(cuentaId, motivo, token) {
+  return requestJson(`/api/admin/roles/cuenta/${encodeURIComponent(cuentaId)}/rechazar-todos`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ motivo }),
+  });
+}
+
 export function rechazarRol(cuentaRolId, motivo, token) {
   return requestJson(`/api/admin/roles/${encodeURIComponent(cuentaRolId)}/rechazar`, {
     method: 'POST',

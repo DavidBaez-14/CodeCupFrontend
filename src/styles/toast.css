@@ -1,0 +1,31 @@
+.cc-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  background: var(--color-bg-elevated);
+  border: 1px solid rgba(255, 85, 0, 0.3);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 20px rgba(255,85,0,0.15);
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-fg);
+  z-index: 300;
+  opacity: 0;
+  transition: opacity 220ms var(--ease-smooth), transform 220ms var(--ease-smooth);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.cc-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+.cc-toast svg {
+  flex-shrink: 0;
+  color: var(--color-success);
+}

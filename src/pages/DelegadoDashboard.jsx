@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
+import PerfilDeportivoGuard from '../components/PerfilDeportivoGuard';
 import RoleHeaderActions from '../components/RoleHeaderActions';
+import { useToast } from '../components/Toast';
 import { getMiEquipo, listSolicitudesPendientes } from '../api/supercopa';
 import { appwriteLogout } from '../lib/appwrite';
 import { clearSession, getNombre, getToken } from '../utils/session';
@@ -13,6 +15,7 @@ import '../styles/admin.css';
 import '../styles/role-shell.css';
 import '../styles/delegado.css';
 import '../styles/admin-torneo.css';
+import '../styles/toast.css';
 
 const TABS = [
   { id: 'torneos', label: 'Torneos' },
@@ -29,6 +32,7 @@ function DelegadoDashboard() {
   const [activeTab, setActiveTab] = useState('equipo');
   const [tieneEquipo, setTieneEquipo] = useState(false);
   const [pendientesCount, setPendientesCount] = useState(0);
+  const { Toast, toast } = useToast();
 
   const handleLogout = async () => {
     clearSession();
@@ -57,6 +61,7 @@ function DelegadoDashboard() {
   };
 
   return (
+    <PerfilDeportivoGuard>
     <main className="role-shell delegado-shell">
       <header className="role-topbar delegado-topbar">
         <div className="role-brand">
@@ -72,11 +77,18 @@ function DelegadoDashboard() {
         </div>
       </header>
 
-      <article className="ds-panel welcome-panel delegado-hero">
-        <p className="role-tag">DELEGADO</p>
-        <h1>Hola, {nombre.split(' ')[0]}</h1>
-        <p>Gestiona tu equipo, inscríbete a torneos abiertos y carga tus pagos. Tu equipo aparece como inscrito apenas envíes el comprobante.</p>
-      </article>
+      {/* Hero — mockup upgrade */}
+      <div className="dg-hero">
+        <div className="dg-hero-inner">
+          <span className="dg-role-tag">Delegado</span>
+          <h1 className="dg-hero-greeting">Hola, <em>{nombre.split(' ')[0]}</em></h1>
+          <p className="dg-hero-sub">
+            Gestiona tu equipo, inscríbete a torneos abiertos y carga tus pagos.
+            Tu equipo aparece como inscrito apenas envíes el comprobante.
+          </p>
+        </div>
+        <div className="dg-hero-divider" />
+      </div>
 
       <nav className="delegado-tabs" aria-label="Pestañas de delegado">
         {TABS.map((tab) => (
@@ -96,15 +108,20 @@ function DelegadoDashboard() {
 
       <section className="role-content delegado-content">
         {activeTab === 'torneos' && (
-          <TorneosTab tieneEquipo={tieneEquipo} onInscripcion={refreshEquipoFlag} />
+          <TorneosTab tieneEquipo={tieneEquipo} onInscripcion={refreshEquipoFlag} toast={toast} />
         )}
         {activeTab === 'equipo' && (
-          <MiEquipoTab onEquipoCreado={refreshEquipoFlag} />
+          <MiEquipoTab onEquipoCreado={refreshEquipoFlag} toast={toast} />
         )}
-        {activeTab === 'pagos' && <PagosTab />}
-        {activeTab === 'solicitudes' && <SolicitudesTab />}
+        {activeTab === 'pagos' && <PagosTab toast={toast} />}
+        {activeTab === 'solicitudes' && <SolicitudesTab toast={toast} />}
       </section>
+
+      <footer className="dg-page-footer">© 2026 · Code Cup · UFPS Cúcuta</footer>
+
+      <Toast />
     </main>
+    </PerfilDeportivoGuard>
   );
 }
 

@@ -38,6 +38,14 @@ export function getMiPerfil(token) {
   });
 }
 
+export function actualizarMiPerfil(payload, token) {
+  return requestJson(buildUrl('/api/supercopa/mi-perfil'), {
+    method: 'PUT',
+    headers: authHeader(token, true),
+    body: JSON.stringify(payload),
+  });
+}
+
 // ─────────────────────────────────────────────────────────
 //  SOLICITUDES (jugador / delegado)
 // ─────────────────────────────────────────────────────────
@@ -310,4 +318,65 @@ export function actualizarCamiseta(equipoTorneoId, cedula, numeroCamiseta, token
       body: JSON.stringify({ numeroCamiseta }),
     },
   );
+}
+
+// ─────────────────────────────────────────────────────────
+//  ADMIN / ÁRBITRO — Alineación
+// ─────────────────────────────────────────────────────────
+
+export function listAlineacionPartido(partidoId, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/partidos/${partidoId}/alineacion`), {
+    method: 'GET',
+    headers: authHeader(token),
+  });
+}
+
+export function agregarJugadorCancha(partidoId, cedula, equipoTorneoId, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/partidos/${partidoId}/alineacion`), {
+    method: 'POST',
+    headers: authHeader(token, true),
+    body: JSON.stringify({ cedula, equipoTorneoId }),
+  });
+}
+
+export function quitarJugadorCancha(partidoId, cedula, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/partidos/${partidoId}/alineacion/${encodeURIComponent(cedula)}`), {
+    method: 'DELETE',
+    headers: authHeader(token),
+  });
+}
+
+export function agregarTodosJugadores(partidoId, equipoTorneoId, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/partidos/${partidoId}/alineacion/add-all`), {
+    method: 'POST',
+    headers: authHeader(token, true),
+    body: JSON.stringify({ equipoTorneoId }),
+  });
+}
+
+// ─────────────────────────────────────────────────────────
+//  ADMIN / ÁRBITRO — Excepciones (WO / Cancelar / Reabrir)
+// ─────────────────────────────────────────────────────────
+
+export function declararWO(partidoId, payload, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/partidos/${partidoId}/wo`), {
+    method: 'POST',
+    headers: authHeader(token, true),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function cancelarPartido(partidoId, payload, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/partidos/${partidoId}/cancelar`), {
+    method: 'POST',
+    headers: authHeader(token, true),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function reabrirPartido(partidoId, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/partidos/${partidoId}/reabrir`), {
+    method: 'POST',
+    headers: authHeader(token),
+  });
 }

@@ -71,7 +71,7 @@ function UsuariosView() {
   }, [load]);
 
   const showSuccess = (msg) => setToast({ msg, kind: 'success' });
-  const showError = (msg) => setToast({ msg, kind: 'danger' });
+  //const showError = (msg) => setToast({ msg, kind: 'danger' });
 
   const handleAssign = (cuenta, rol) => {
     setModalAssign({ open: true, cuenta, rol });

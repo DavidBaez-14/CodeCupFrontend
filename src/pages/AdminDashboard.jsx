@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
 import RoleHeaderActions from '../components/RoleHeaderActions';
-import { aprobarRol, listPendientes, rechazarRol } from '../api/registros';
+import { aprobarRol, aprobarTodosCuenta, listPendientes, rechazarRol, rechazarTodosCuenta } from '../api/registros';
 import { getJugadorByCedula, uploadCsv } from '../api/jugadores';
 import { appwriteLogout } from '../lib/appwrite';
 import { clearSession, getEmail, getNombre, getToken } from '../utils/session';
@@ -176,12 +176,22 @@ function AdminDashboard() {
   );
 }
 
+// Orden estable de pills cuando una cuenta tiene varios roles pendientes.
+const ROL_ORDEN = { DELEGADO: 0, JUGADOR: 1, ARBITRO: 2, ADMINISTRADOR: 3 };
+
 function PendientesView() {
   const [registros, setRegistros] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [actioningId, setActioningId] = useState(null);
-  const [rechazo, setRechazo] = useState({ open: false, perfilId: null, nombre: '', motivo: '' });
+  // perfilId: null cuando el rechazo es del grupo completo (cuentaId).
+  const [rechazo, setRechazo] = useState({
+    open: false,
+    cuentaId: null,
+    perfilId: null,
+    nombre: '',
+    motivo: '',
+  });
   const [feedback, setFeedback] = useState('');
 
   const load = useCallback(async () => {
@@ -201,14 +211,50 @@ function PendientesView() {
     load();
   }, [load]);
 
-  const handleAprobar = async (perfil) => {
-    setActioningId(perfil.id);
+  // Agrupamos solicitudes por cuenta para mostrar una sola fila aunque traiga
+  // varios roles pendientes (caso: pidió DELEGADO y el backend creó también JUGADOR).
+  const grupos = useMemo(() => {
+    const map = new Map();
+    for (const r of registros) {
+      const key = r.cuentaId || `solo:${r.id}`;
+      const arr = map.get(key) || [];
+      arr.push(r);
+      map.set(key, arr);
+    }
+    return Array.from(map.entries()).map(([key, solicitudes]) => {
+      const ordenadas = [...solicitudes].sort((a, b) => {
+        const oa = ROL_ORDEN[a.rol] ?? 99;
+        const ob = ROL_ORDEN[b.rol] ?? 99;
+        return oa - ob;
+      });
+      const cabecera = ordenadas[0];
+      return {
+        key,
+        cuentaId: cabecera.cuentaId || null,
+        cabecera,
+        solicitudes: ordenadas,
+        total: ordenadas.length,
+        motivoSolicitud: ordenadas.find((s) => s.motivoSolicitud)?.motivoSolicitud,
+        fechaSolicitud: cabecera.fechaSolicitud,
+      };
+    });
+  }, [registros]);
+
+  const handleAprobarGrupo = async (grupo) => {
+    const actionKey = grupo.cuentaId || grupo.cabecera.id;
+    setActioningId(actionKey);
     setError('');
     setFeedback('');
     try {
-      await aprobarRol(perfil.id, getToken());
-      setFeedback(`Solicitud de ${perfil.nombre || perfil.correo} aprobada.`);
-      setRegistros((prev) => prev.filter((r) => r.id !== perfil.id));
+      if (grupo.total > 1 && grupo.cuentaId) {
+        await aprobarTodosCuenta(grupo.cuentaId, getToken());
+        setFeedback(`Todos los roles de ${grupo.cabecera.nombre || grupo.cabecera.correo} aprobados.`);
+        setRegistros((prev) => prev.filter((r) => r.cuentaId !== grupo.cuentaId));
+      } else {
+        await aprobarRol(grupo.cabecera.id, getToken());
+        setFeedback(`Solicitud de ${grupo.cabecera.nombre || grupo.cabecera.correo} aprobada.`);
+        setRegistros((prev) => prev.filter((r) => r.id !== grupo.cabecera.id));
+      }
     } catch (err) {
       setError(err?.message || 'No fue posible aprobar la solicitud.');
     } finally {
@@ -216,8 +262,14 @@ function PendientesView() {
     }
   };
 
-  const openRechazo = (perfil) => {
-    setRechazo({ open: true, perfilId: perfil.id, nombre: perfil.nombre || perfil.correo, motivo: '' });
+  const openRechazo = (grupo) => {
+    setRechazo({
+      open: true,
+      cuentaId: grupo.total > 1 ? grupo.cuentaId : null,
+      perfilId: grupo.total > 1 ? null : grupo.cabecera.id,
+      nombre: grupo.cabecera.nombre || grupo.cabecera.correo,
+      motivo: '',
+    });
   };
 
   const handleRechazar = async () => {
@@ -225,14 +277,21 @@ function PendientesView() {
       setError('Indica un motivo para el rechazo.');
       return;
     }
-    setActioningId(rechazo.perfilId);
+    const actionKey = rechazo.cuentaId || rechazo.perfilId;
+    setActioningId(actionKey);
     setError('');
     setFeedback('');
     try {
-      await rechazarRol(rechazo.perfilId, rechazo.motivo.trim(), getToken());
-      setFeedback(`Solicitud de ${rechazo.nombre} rechazada.`);
-      setRegistros((prev) => prev.filter((r) => r.id !== rechazo.perfilId));
-      setRechazo({ open: false, perfilId: null, nombre: '', motivo: '' });
+      if (rechazo.cuentaId) {
+        await rechazarTodosCuenta(rechazo.cuentaId, rechazo.motivo.trim(), getToken());
+        setFeedback(`Solicitudes de ${rechazo.nombre} rechazadas.`);
+        setRegistros((prev) => prev.filter((r) => r.cuentaId !== rechazo.cuentaId));
+      } else {
+        await rechazarRol(rechazo.perfilId, rechazo.motivo.trim(), getToken());
+        setFeedback(`Solicitud de ${rechazo.nombre} rechazada.`);
+        setRegistros((prev) => prev.filter((r) => r.id !== rechazo.perfilId));
+      }
+      setRechazo({ open: false, cuentaId: null, perfilId: null, nombre: '', motivo: '' });
     } catch (err) {
       setError(err?.message || 'No fue posible rechazar la solicitud.');
     } finally {
@@ -245,7 +304,7 @@ function PendientesView() {
       <div className="metric-row">
         <article className="metric-card">
           <p className="metric-label">Pendientes</p>
-          <p className="metric-value">{registros.length}</p>
+          <p className="metric-value">{grupos.length}</p>
           <p className="metric-hint">Esperan tu aprobación</p>
         </article>
         <article className="metric-card metric-secondary">
@@ -286,90 +345,117 @@ function PendientesView() {
                 </tr>
               </thead>
               <tbody>
-                {registros.map((perfil) => (
-                  <tr key={perfil.id}>
-                    <td>
-                      <div>{perfil.nombre || '—'}</div>
-                      {perfil.motivoSolicitud && (
-                        <small className="muted" title={perfil.motivoSolicitud}>
-                          “{perfil.motivoSolicitud}”
-                        </small>
-                      )}
-                    </td>
-                    <td>{perfil.correo || '—'}</td>
-                    <td className="mono">{perfil.cedula || '—'}</td>
-                    <td>
-                      <span className={`role-pill role-${(perfil.rol || '').toLowerCase()}`}>
-                        {ROL_LABEL[perfil.rol] || perfil.rol || '—'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`role-pill role-${(perfil.estado || '').toLowerCase()}`}>
-                        {ESTADO_LABEL[perfil.estado] || perfil.estado || '—'}
-                      </span>
-                    </td>
-                    <td className="muted">{formatFecha(perfil.fechaSolicitud)}</td>
-                    <td className="actions-cell">
-                      <button
-                        type="button"
-                        className="action-button approve"
-                        disabled={actioningId === perfil.id}
-                        onClick={() => handleAprobar(perfil)}
-                      >
-                        {actioningId === perfil.id ? '…' : 'Aprobar'}
-                      </button>
-                      <button
-                        type="button"
-                        className="action-button reject"
-                        disabled={actioningId === perfil.id}
-                        onClick={() => openRechazo(perfil)}
-                      >
-                        Rechazar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {grupos.map((grupo) => {
+                  const actionKey = grupo.cuentaId || grupo.cabecera.id;
+                  const ocupado = actioningId === actionKey;
+                  return (
+                    <tr key={grupo.key}>
+                      <td>
+                        <div>{grupo.cabecera.nombre || '—'}</div>
+                        {grupo.motivoSolicitud && (
+                          <small className="muted" title={grupo.motivoSolicitud}>
+                            “{grupo.motivoSolicitud}”
+                          </small>
+                        )}
+                      </td>
+                      <td>{grupo.cabecera.correo || '—'}</td>
+                      <td className="mono">{grupo.cabecera.cedula || '—'}</td>
+                      <td>
+                        <div className="role-pill-stack">
+                          {grupo.solicitudes.map((s) => (
+                            <span key={s.id} className={`role-pill role-${(s.rol || '').toLowerCase()}`}>
+                              {ROL_LABEL[s.rol] || s.rol || '—'}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="role-pill-stack">
+                          {grupo.solicitudes.map((s) => (
+                            <span key={s.id} className={`role-pill role-${(s.estado || '').toLowerCase()}`}>
+                              {ESTADO_LABEL[s.estado] || s.estado || '—'}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="muted">{formatFecha(grupo.fechaSolicitud)}</td>
+                      <td className="actions-cell">
+                        <button
+                          type="button"
+                          className="action-button approve"
+                          disabled={ocupado}
+                          onClick={() => handleAprobarGrupo(grupo)}
+                          title={grupo.total > 1
+                            ? 'Aprueba todos los roles solicitados por esta cuenta'
+                            : undefined}
+                        >
+                          {ocupado
+                            ? '…'
+                            : grupo.total > 1
+                              ? `Aprobar ${grupo.total} roles`
+                              : 'Aprobar'}
+                        </button>
+                        <button
+                          type="button"
+                          className="action-button reject"
+                          disabled={ocupado}
+                          onClick={() => openRechazo(grupo)}
+                        >
+                          Rechazar
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </article>
 
-      {rechazo.open && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true">
-          <div className="modal-card">
-            <h3>Rechazar solicitud</h3>
-            <p>Vas a rechazar la solicitud de <strong>{rechazo.nombre}</strong>. La cuenta de Appwrite no se elimina; si la persona tiene otros roles aprobados, los conserva.</p>
-            <label className="form-label" htmlFor="motivo-rechazo">Motivo</label>
-            <textarea
-              id="motivo-rechazo"
-              className="form-input"
-              rows={4}
-              value={rechazo.motivo}
-              onChange={(e) => setRechazo((prev) => ({ ...prev, motivo: e.target.value }))}
-              placeholder="Ej: cédula no encontrada en la base de la facultad."
-            />
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="action-button ghost"
-                onClick={() => setRechazo({ open: false, perfilId: null, nombre: '', motivo: '' })}
-                disabled={actioningId === rechazo.perfilId}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="action-button reject"
-                onClick={handleRechazar}
-                disabled={actioningId === rechazo.perfilId}
-              >
-                {actioningId === rechazo.perfilId ? 'Rechazando…' : 'Confirmar rechazo'}
-              </button>
+      {rechazo.open && (() => {
+        const rechazoActionKey = rechazo.cuentaId || rechazo.perfilId;
+        const ocupado = actioningId === rechazoActionKey;
+        const esGrupo = !!rechazo.cuentaId;
+        return (
+          <div className="modal-backdrop" role="dialog" aria-modal="true">
+            <div className="modal-card">
+              <h3>Rechazar solicitud</h3>
+              <p>
+                Vas a rechazar {esGrupo ? 'todas las solicitudes' : 'la solicitud'} de <strong>{rechazo.nombre}</strong>.
+                La cuenta de Appwrite no se elimina; si la persona tiene otros roles aprobados, los conserva.
+              </p>
+              <label className="form-label" htmlFor="motivo-rechazo">Motivo</label>
+              <textarea
+                id="motivo-rechazo"
+                className="form-input"
+                rows={4}
+                value={rechazo.motivo}
+                onChange={(e) => setRechazo((prev) => ({ ...prev, motivo: e.target.value }))}
+                placeholder="Ej: cédula no encontrada en la base de la facultad."
+              />
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="action-button ghost"
+                  onClick={() => setRechazo({ open: false, cuentaId: null, perfilId: null, nombre: '', motivo: '' })}
+                  disabled={ocupado}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="action-button reject"
+                  onClick={handleRechazar}
+                  disabled={ocupado}
+                >
+                  {ocupado ? 'Rechazando…' : 'Confirmar rechazo'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

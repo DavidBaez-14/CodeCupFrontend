@@ -52,11 +52,14 @@ function SignupPage() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Lookup de cédula contra el padrón cuando el usuario elige JUGADOR.
-  // Si está en el padrón, ocultamos los campos académicos: el backend los
-  // toma del padrón ignorando lo que mande el frontend.
+  // Lookup de cédula contra el padrón cuando el usuario elige JUGADOR o DELEGADO.
+  // Regla: todo DELEGADO también es JUGADOR — el backend crea ambos CuentaRol.
+  // Si está en padrón, ocultamos los campos académicos: el backend los toma
+  // del padrón ignorando lo que mande el frontend.
+  const pideJugador = form.tipoCuenta === 'JUGADOR' || form.tipoCuenta === 'DELEGADO';
+
   useEffect(() => {
-    if (form.tipoCuenta !== 'JUGADOR') {
+    if (!pideJugador) {
       setPadron({ checking: false, enPadron: null, nombre: '', esEstudiante: false });
       return undefined;
     }
@@ -80,7 +83,7 @@ function SignupPage() {
       }
     }, 400);
     return () => clearTimeout(handle);
-  }, [form.cedula, form.tipoCuenta]);
+  }, [form.cedula, form.tipoCuenta, pideJugador]);
 
   const handleGoogle = async () => {
     setError('');
@@ -115,8 +118,9 @@ function SignupPage() {
     }
     // Solo exigimos campos académicos cuando NO está en padrón: ahí los digita
     // el usuario y el admin los valida. Si está en padrón, el backend los toma
-    // de la fuente oficial.
-    if (form.tipoCuenta === 'JUGADOR' && !padron.enPadron && form.rolJugador === 'ESTUDIANTE') {
+    // de la fuente oficial. Aplica tanto a JUGADOR como a DELEGADO (todo
+    // delegado también es jugador).
+    if (pideJugador && !padron.enPadron && form.rolJugador === 'ESTUDIANTE') {
       if (!form.codigoUniversitario.trim()) {
         setError('El código estudiantil es obligatorio.');
         return;
@@ -155,9 +159,10 @@ function SignupPage() {
 
       // 4. Una sola ruta para todos los roles: el backend decide APROBADO /
       //    PENDIENTE / PENDIENTE_VALIDACION según rol y padrón.
-      // Si el jugador está en padrón, no mandamos campos académicos: el backend
-      // los ignora y copia los oficiales. Solo aplican cuando NO está en padrón.
-      const enviarCamposJugador = form.tipoCuenta === 'JUGADOR' && !padron.enPadron;
+      // Si está en padrón, no mandamos campos académicos: el backend los
+      // ignora y copia los oficiales. Solo aplican cuando NO está en padrón.
+      // Aplica tanto a JUGADOR como a DELEGADO (que también será jugador).
+      const enviarCamposJugador = pideJugador && !padron.enPadron;
       const data = await solicitarRol({
         appwriteJwt,
         cedula: form.cedula.trim(),
@@ -280,20 +285,22 @@ function SignupPage() {
             </div>
           </div>
 
-          {form.tipoCuenta === 'JUGADOR' && padron.enPadron === true && (
+          {pideJugador && padron.enPadron === true && (
             <div className="login-hint" style={{ background: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.35)' }}>
               ✓ Encontramos tu información en el padrón oficial{padron.nombre ? `: ${padron.nombre}` : ''}.
-              Tu cuenta de jugador quedará activa de inmediato y tomaremos tu rol, código y semestre desde nuestros registros.
+              {form.tipoCuenta === 'JUGADOR'
+                ? ' Tu cuenta de jugador quedará activa de inmediato y tomaremos tu rol, código y semestre desde nuestros registros.'
+                : ' Tu cuenta de jugador quedará activa de inmediato; el rol de delegado lo aprobará un administrador.'}
             </div>
           )}
 
-          {form.tipoCuenta === 'JUGADOR' && padron.enPadron === false && (
+          {pideJugador && padron.enPadron === false && (
             <div className="login-hint" style={{ background: 'rgba(250,204,21,0.08)', borderColor: 'rgba(250,204,21,0.35)' }}>
               Tu cédula no aparece en el padrón. Completa los datos abajo: un administrador revisará tu caso.
             </div>
           )}
 
-          {form.tipoCuenta === 'JUGADOR' && !padron.enPadron && (
+          {pideJugador && !padron.enPadron && (
             <div className="form-group">
               <label className="form-label" htmlFor="rolJugador">Rol del jugador</label>
               <select
@@ -310,7 +317,7 @@ function SignupPage() {
             </div>
           )}
 
-          {form.tipoCuenta === 'JUGADOR' && !padron.enPadron && form.rolJugador === 'ESTUDIANTE' && (
+          {pideJugador && !padron.enPadron && form.rolJugador === 'ESTUDIANTE' && (
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label" htmlFor="codigoUniversitario">Código estudiantil</label>
@@ -344,7 +351,7 @@ function SignupPage() {
             </div>
           )}
 
-          {!(form.tipoCuenta === 'JUGADOR' && padron.enPadron) && (
+          {!(pideJugador && padron.enPadron && form.tipoCuenta === 'JUGADOR') && (
             <div className="form-group">
               <label className="form-label" htmlFor="motivoSolicitud">
                 Comentario para el administrador (opcional)
