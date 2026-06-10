@@ -8,10 +8,13 @@ const EVENT_TYPES = [
   { id: 'roja',     label: 'Roja' },
 ];
 
+/**
+ * Registro de eventos del partido. Cronología única (sin división por tiempos).
+ * Los eventos vienen ya persistidos en BD (vía useGestionPartido).
+ */
 function EventosTab({ match, onAddEvent, onDeleteEvent }) {
   const closed = match.status === 'played';
   const [type, setType] = useState('gol');
-  const [half, setHalf] = useState(1);
   const [side, setSide] = useState('home');
   const [playerNum, setPlayerNum] = useState(null);
 
@@ -22,11 +25,11 @@ function EventosTab({ match, onAddEvent, onDeleteEvent }) {
 
   const canRegister = playerNum !== null && !closed;
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!canRegister) return;
     const p = rosterArr.find((pl) => pl.num === playerNum);
     if (!p) return;
-    onAddEvent({ type, side, half, player: p.name, num: p.num });
+    await onAddEvent({ type, side, player: p.name, num: p.num });
     setPlayerNum(null);
   };
 
@@ -67,26 +70,6 @@ function EventosTab({ match, onAddEvent, onDeleteEvent }) {
               {t.label}
             </button>
           ))}
-        </div>
-
-        <div className="ar-chooser-label">Tiempo</div>
-        <div className="ar-half-toggle">
-          <button
-            type="button"
-            className={`ar-half-btn${half === 1 ? ' active' : ''}`}
-            onClick={() => setHalf(1)}
-            disabled={closed}
-          >
-            Primer tiempo
-          </button>
-          <button
-            type="button"
-            className={`ar-half-btn${half === 2 ? ' active' : ''}`}
-            onClick={() => setHalf(2)}
-            disabled={closed}
-          >
-            Segundo tiempo
-          </button>
         </div>
 
         <div className="ar-chooser-label">Equipo</div>
@@ -148,31 +131,23 @@ function EventosTab({ match, onAddEvent, onDeleteEvent }) {
       </div>
 
       <div className="ar-timeline-section">
-        <HalfTimeline title="Primer tiempo" half={1} events={match.events || []} onDelete={onDeleteEvent} disabled={closed} />
-        <HalfTimeline title="Segundo tiempo" half={2} events={match.events || []} onDelete={onDeleteEvent} disabled={closed} />
+        <div className="ar-timeline-half-label">Cronología</div>
+        {(!match.events || match.events.length === 0) ? (
+          <div className="ar-empty-timeline">Sin eventos registrados</div>
+        ) : (
+          <div className="ar-timeline">
+            {match.events.map((e) => (
+              <TimelineItem
+                key={e.id}
+                event={e}
+                onDelete={() => onDeleteEvent(e.id)}
+                disabled={closed}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
-  );
-}
-
-function HalfTimeline({ title, half, events, onDelete, disabled }) {
-  const list = events
-    .map((e, idx) => ({ ...e, _idx: idx }))
-    .filter((e) => e.half === half);
-
-  return (
-    <>
-      <div className="ar-timeline-half-label">{title}</div>
-      {list.length === 0 ? (
-        <div className="ar-empty-timeline">Sin eventos en este tiempo</div>
-      ) : (
-        <div className="ar-timeline">
-          {list.map((e) => (
-            <TimelineItem key={`${e._idx}-${e.type}`} event={e} onDelete={() => onDelete(e._idx)} disabled={disabled} />
-          ))}
-        </div>
-      )}
-    </>
   );
 }
 
@@ -181,8 +156,10 @@ function TimelineItem({ event: e, onDelete, disabled }) {
 
   const content = (
     <div className={`ar-tl-content ${isHome ? 'left' : 'right'}`}>
-      <span className="ar-tl-event-type">{EVENT_LABELS[e.type]}</span>
-      <span className="ar-tl-player">{e.player} · #{e.num}</span>
+      <span className="ar-tl-event-type">{EVENT_LABELS[e.type] || e.type}</span>
+      <span className="ar-tl-player">
+        {e.player}{e.num != null ? ` · #${e.num}` : ''}
+      </span>
       {!disabled && (
         <button type="button" className="ar-tl-delete" onClick={onDelete} aria-label="Eliminar evento">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

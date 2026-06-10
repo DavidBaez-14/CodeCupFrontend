@@ -249,8 +249,37 @@ export function generarFixture(torneoId, token) {
   });
 }
 
+export function borrarFixture(torneoId, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/torneos/${torneoId}/fixture`), {
+    method: 'DELETE',
+    headers: authHeader(token),
+  });
+}
+
+export function getConfiguracionTorneo(torneoId, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/torneos/${torneoId}/configuracion`), {
+    method: 'GET',
+    headers: authHeader(token),
+  });
+}
+
+export function guardarConfiguracionTorneo(torneoId, payload, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/torneos/${torneoId}/configuracion`), {
+    method: 'PUT',
+    headers: authHeader(token, true),
+    body: JSON.stringify(payload),
+  });
+}
+
 export function listPartidosTorneo(torneoId, token) {
   return requestJson(buildUrl(`/api/supercopa/admin/torneos/${torneoId}/partidos`), {
+    method: 'GET',
+    headers: authHeader(token),
+  });
+}
+
+export function getClasificacion(torneoId, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/torneos/${torneoId}/clasificacion`), {
     method: 'GET',
     headers: authHeader(token),
   });

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Torneos · Code Cup Admin</title>
+<link rel="icon" href="assets/soccer-ball-sci-fi-192.png">
+<link rel="stylesheet" href="colors_and_type.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--color-bg); color: var(--color-fg); font-family: var(--font-body); min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+
+/* ── SHARED ADMIN SHELL ─────────────────────────────────── */
+.shell { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+@media (max-width: 900px) { .shell { grid-template-columns: 1fr; } .sidebar { display: none; } }
+.sidebar { background: var(--navy-900); border-right: 1px solid var(--color-border); padding: 18px 0 24px; position: sticky; top: 0; height: 100vh; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,85,0,0.2) transparent; }
+.sidebar::-webkit-scrollbar { width: 4px; } .sidebar::-webkit-scrollbar-thumb { background: rgba(255,85,0,0.2); border-radius: 2px; }
+.sb-brand { display: flex; align-items: center; gap: 10px; padding: 4px 22px 24px; border-bottom: 1px solid var(--color-border); margin-bottom: 18px; }
+.sb-brand img { width: 36px; height: 36px; border-radius: 8px; }
+.sb-brand-text { font-family: var(--font-display); font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: -0.01em; line-height: 1; }
+.sb-brand-text em { color: var(--color-brand); font-style: normal; }
+.sb-brand-sub { font-family: var(--font-ui); font-size: 8px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-top: 4px; }
+.sb-section-label { font-family: var(--font-ui); font-size: 9px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.3); padding: 14px 22px 8px; }
+.sb-link { display: flex; align-items: center; gap: 10px; padding: 10px 22px; font-family: var(--font-body); font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.55); text-decoration: none; border-left: 2px solid transparent; transition: all var(--duration-fast); cursor: pointer; }
+.sb-link:hover { color: var(--color-fg); background: rgba(255,255,255,0.02); }
+.sb-link.active { color: var(--color-fg); background: linear-gradient(90deg, rgba(255,85,0,0.08), transparent); border-left-color: var(--color-brand); }
+.sb-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.2); flex-shrink: 0; transition: all var(--duration-fast); }
+.sb-link.active .sb-dot { background: var(--color-brand); box-shadow: 0 0 8px var(--color-brand-glow); }
+.sb-prox { margin-left: auto; font-family: var(--font-ui); font-size: 8px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.3); padding: 3px 7px; border-radius: 3px; border: 1px solid var(--color-border); }
+.sb-badge { margin-left: auto; font-family: var(--font-mono); font-size: 10px; font-weight: 700; background: rgba(255,85,0,0.2); color: var(--color-brand); padding: 2px 7px; border-radius: 100px; }
+
+.main { display: flex; flex-direction: column; min-width: 0; }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 22px 32px 14px; gap: 16px; }
+.crumbs { font-family: var(--font-ui); font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.35); }
+.crumbs span { color: rgba(255,255,255,0.7); }
+.user-pill { display: flex; align-items: center; gap: 8px; padding: 5px 14px 5px 5px; background: rgba(255,255,255,0.04); border: 1px solid var(--color-border); border-radius: 100px; }
+.user-pill-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--color-brand), var(--orange-700)); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 900; font-size: 12px; color: #fff; }
+.user-pill-name { font-family: var(--font-ui); font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.85); }
+
+.page { padding: 8px 32px 48px; flex: 1; }
+.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-bottom: 22px; }
+.page-title { font-family: var(--font-display); font-size: clamp(32px, 4vw, 44px); font-weight: 900; letter-spacing: -0.02em; line-height: 1; }
+.page-title em { color: var(--color-brand); font-style: normal; }
+.page-subtitle { font-family: var(--font-body); font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 8px; max-width: 540px; line-height: 1.5; }
+
+/* ── CREATE BUTTON with sparkle ─────────────────────────── */
+.btn-create {
+  position: relative; overflow: hidden;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-ui); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  background: var(--color-brand); color: #fff;
+  border: none; border-radius: var(--radius-md);
+  padding: 14px 22px;
+  cursor: pointer; text-decoration: none;
+  box-shadow: 0 4px 16px rgba(255,85,0,0.3);
+  transition: transform var(--duration-fast) var(--ease-spring), box-shadow var(--duration-fast);
+}
+.btn-create::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 700ms var(--ease-smooth);
+}
+.btn-create:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(255,85,0,0.5); }
+.btn-create:hover::before { transform: translateX(100%); }
+.btn-create:active { transform: scale(0.97); }
+.btn-create svg { transition: transform var(--duration-normal) var(--ease-spring); }
+.btn-create:hover svg { transform: rotate(180deg) scale(1.15); }
+
+/* ── FILTER PILLS ───────────────────────────────────────── */
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+.filter-pill {
+  font-family: var(--font-ui); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.03);
+  border: 1px solid var(--color-border); border-radius: 100px;
+  padding: 8px 14px; cursor: pointer;
+  transition: all var(--duration-fast);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.filter-pill:hover { color: var(--color-fg); border-color: rgba(255,85,0,0.3); }
+.filter-pill.active { color: var(--color-fg); background: rgba(255,85,0,0.1); border-color: var(--color-border-brand); box-shadow: 0 0 12px rgba(255,85,0,0.15); }
+.filter-pill .fp-count {
+  font-family: var(--font-mono); font-size: 9px; padding: 2px 6px;
+  border-radius: 100px; background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.7);
+}
+.filter-pill.active .fp-count { background: rgba(255,85,0,0.18); color: var(--color-brand); }
+
+/* ── TORNEOS GRID (HUD CARDS) ───────────────────────────── */
+.torneos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+
+.hud-card {
+  position: relative;
+  background: var(--color-bg-surface);
+  padding: 20px;
+  cursor: pointer;
+  transition: transform 240ms var(--ease-spring), background var(--duration-normal);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+  overflow: visible;
+  text-decoration: none; color: inherit;
+  display: flex; flex-direction: column;
+  min-height: 230px;
+}
+.hud-card::before, .hud-card::after {
+  content: ''; position: absolute; width: 10px; height: 10px;
+  transition: width var(--duration-normal), height var(--duration-normal);
+}
+.hud-card::before { top: 0; left: 0; border-top: 2px solid rgba(255,85,0,0.5); border-left: 2px solid rgba(255,85,0,0.5); }
+.hud-card::after  { bottom: 0; right: 0; border-bottom: 2px solid rgba(255,85,0,0.5); border-right: 2px solid rgba(255,85,0,0.5); }
+.hud-card:hover { transform: translateY(-4px) scale(1.01); background: var(--color-bg-elevated); }
+.hud-card:hover::before, .hud-card:hover::after { width: 18px; height: 18px; }
+.hud-card:hover .hud-glow { opacity: 1; }
+.corner-tr, .corner-bl {
+  position: absolute; width: 10px; height: 10px;
+  transition: width var(--duration-normal);
+}
+.corner-tr { top: 0; right: 18px; border-top: 2px solid rgba(255,85,0,0.5); }
+.corner-bl { bottom: 0; left: 18px; border-bottom: 2px solid rgba(255,85,0,0.5); }
+.hud-card:hover .corner-tr, .hud-card:hover .corner-bl { width: 24px; }
+.hud-glow {
+  position: absolute; inset: 0;
+  box-shadow: inset 0 0 0 1px rgba(255,85,0,0.2), 0 0 28px rgba(255,85,0,0.12);
+  clip-path: inherit;
+  opacity: 0; transition: opacity var(--duration-normal);
+  pointer-events: none;
+}
+.t-year-bg {
+  position: absolute; top: -8px; right: -4px;
+  font-family: var(--font-display); font-size: 88px; font-weight: 900;
+  letter-spacing: -0.04em; color: rgba(255,85,0,0.06); line-height: 1;
+  text-transform: uppercase; pointer-events: none; user-select: none;
+  transition: color var(--duration-normal);
+}
+.hud-card:hover .t-year-bg { color: rgba(255,85,0,0.1); }
+
+.t-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-ui); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 2px;
+  margin-bottom: 14px; align-self: flex-start;
+}
+.t-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.t-badge.active { background: rgba(255,85,0,0.15); color: var(--color-brand); border: 1px solid rgba(255,85,0,0.3); }
+.t-badge.draft  { background: rgba(250,204,21,0.1); color: var(--color-warning); border: 1px solid rgba(250,204,21,0.3); }
+.t-badge.done   { background: rgba(255,255,255,0.05); color: var(--gray-400); border: 1px solid rgba(255,255,255,0.08); }
+.t-badge.upcoming { background: rgba(59,130,246,0.12); color: var(--blue-400); border: 1px solid rgba(59,130,246,0.3); }
+
+.t-title { font-family: var(--font-display); font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; line-height: 1.1; margin-bottom: 6px; }
+.t-meta  { font-size: 11px; color: var(--gray-400); letter-spacing: 0.04em; margin-bottom: 12px; }
+.t-format-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
+.t-format-chip {
+  font-family: var(--font-ui); font-size: 8px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 3px 7px; border-radius: 3px;
+  background: rgba(29,111,245,0.1); color: var(--blue-300);
+  border: 1px solid rgba(29,111,245,0.25);
+}
+.t-divider { height: 1px; background: linear-gradient(90deg, rgba(255,85,0,0.4), transparent); margin-bottom: 10px; }
+
+.t-status {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--font-ui); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--color-warning);
+  margin-bottom: 14px;
+}
+.t-status.done { color: rgba(255,255,255,0.45); }
+.t-status .label { color: rgba(255,255,255,0.25); }
+
+.t-actions {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  margin-top: auto;
+}
+.t-action-btn {
+  font-family: var(--font-ui); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--color-border);
+  color: rgba(255,255,255,0.7);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px;
+  transition: all var(--duration-fast);
+  text-decoration: none;
+}
+.t-action-btn:hover { color: var(--color-brand); border-color: rgba(255,85,0,0.4); background: rgba(255,85,0,0.05); }
+.t-action-btn.primary {
+  background: var(--color-brand); color: #fff; border-color: var(--color-brand);
+  box-shadow: 0 0 12px rgba(255,85,0,0.2);
+}
+.t-action-btn.primary:hover { background: var(--color-brand-hover); box-shadow: 0 0 20px rgba(255,85,0,0.4); transform: translateY(-1px); }
+
+/* ── EMPTY STATE / CREATE CARD ──────────────────────────── */
+.create-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; gap: 10px;
+  background: linear-gradient(135deg, rgba(255,85,0,0.06), rgba(255,85,0,0.02));
+  border: 1.5px dashed rgba(255,85,0,0.35);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  cursor: pointer; text-decoration: none; color: inherit;
+  min-height: 230px;
+  transition: all var(--duration-normal);
+}
+.create-card:hover {
+  border-color: var(--color-brand);
+  background: linear-gradient(135deg, rgba(255,85,0,0.1), rgba(255,85,0,0.04));
+  transform: translateY(-3px);
+  box-shadow: 0 12px 36px rgba(255,85,0,0.18);
+}
+.create-card-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: rgba(255,85,0,0.15); color: var(--color-brand);
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255,85,0,0.35);
+  transition: transform var(--duration-normal) var(--ease-spring);
+}
+.create-card:hover .create-card-icon { transform: rotate(180deg) scale(1.1); }
+.create-card-title { font-family: var(--font-display); font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; color: var(--color-fg); }
+.create-card-sub { font-family: var(--font-body); font-size: 12px; color: rgba(255,255,255,0.45); line-height: 1.5; max-width: 240px; }
+
+.toast { position: fixed; bottom: 24px; right: 24px; background: rgba(20,30,50,0.97); backdrop-filter: blur(12px); border: 1px solid rgba(34,197,94,0.4); border-radius: var(--radius-md); padding: 12px 18px; font-family: var(--font-ui); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-fg); z-index: var(--z-toast); display: flex; align-items: center; gap: 8px; opacity: 0; transform: translateY(20px); pointer-events: none; transition: opacity 220ms var(--ease-smooth), transform 220ms var(--ease-spring); }
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast svg { color: var(--color-success); flex-shrink: 0; }
+
+/* Card stagger entrance */
+.hud-card, .create-card { animation: cardIn 0.5s var(--ease-spring) both; }
+@keyframes cardIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+<aside class="sidebar">
+  <div class="sb-brand">
+    <img src="assets/soccer-ball-sci-fi-192.png" alt="Code Cup">
+    <div>
+      <div class="sb-brand-text"><em>Code</em> Cup</div>
+      <div class="sb-brand-sub">Panel de Administrador</div>
+    </div>
+  </div>
+  <div class="sb-section-label">Identidad</div>
+  <a class="sb-link"><span class="sb-dot"></span>Solicitudes pendientes</a>
+  <a class="sb-link"><span class="sb-dot"></span>Cargar jugadores CSV</a>
+  <a class="sb-link"><span class="sb-dot"></span>Buscar jugador</a>
+  <a class="sb-link" href="Admin Usuarios.html"><span class="sb-dot"></span>Usuarios <span class="sb-badge">24</span></a>
+
+  <div class="sb-section-label">Torneo</div>
+  <a class="sb-link active"><span class="sb-dot"></span>Torneos</a>
+  <a class="sb-link"><span class="sb-dot"></span>Gestionar equipos</a>
+  <a class="sb-link" href="Admin Fixture.html"><span class="sb-dot"></span>Fixture y cronograma</a>
+  <a class="sb-link"><span class="sb-dot"></span>Aplazamientos <span class="sb-prox">Próx.</span></a>
+
+  <div class="sb-section-label">Finanzas</div>
+  <a class="sb-link"><span class="sb-dot"></span>Comprobantes pendientes <span class="sb-prox">Próx.</span></a>
+  <a class="sb-link"><span class="sb-dot"></span>Multas activas <span class="sb-prox">Próx.</span></a>
+
+  <div class="sb-section-label">Reportes</div>
+  <a class="sb-link"><span class="sb-dot"></span>Estadísticas <span class="sb-prox">Próx.</span></a>
+  <a class="sb-link"><span class="sb-dot"></span>Reporte PDF <span class="sb-prox">Próx.</span></a>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="crumbs">Dashboard / Torneo / <span>Torneos</span></div>
+    <div class="user-pill"><div class="user-pill-avatar">A</div><span class="user-pill-name">Administrador</span></div>
+  </header>
+
+  <section class="page">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Mis <em>Torneos</em></h1>
+        <p class="page-subtitle">Gestiona todas las ediciones del campeonato. Crea uno nuevo o entra a configurar formato, equipos y fixture.</p>
+      </div>
+      <a class="btn-create" href="Admin Configurar Torneo.html">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Crear Torneo
+      </a>
+    </div>
+
+    <div class="filters" id="filters"></div>
+
+    <div class="torneos-grid" id="torneos-grid"></div>
+  </section>
+</div>
+</div>
+
+<div class="toast" id="toast">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-msg">Listo</span>
+</div>
+
+<script>
+const TORNEOS = [
+  {
+    id: 't26', year: '2026', title: 'Super Copa – Copa del Mundo 2026',
+    teams: 13, status: 'active', format: ['Grupos + Repechaje', '2 grupos'],
+    desc: '13 equipos inscritos · Fase de grupos en curso',
+    statusLabel: 'En curso', champion: null, hasFixture: true,
+  },
+  {
+    id: 't26b', year: '2026', title: 'Copa Inicio 2026-II',
+    teams: 0, status: 'draft', format: ['Por configurar'],
+    desc: 'Borrador · Inscripciones abren Ago 1',
+    statusLabel: 'Sin configurar', champion: null, hasFixture: false,
+  },
+  {
+    id: 't25', year: '2025', title: 'Super Copa – Champions League',
+    teams: 12, status: 'done', format: ['Champions League', 'Repechaje activo'],
+    desc: 'Finalizado · 28 partidos jugados',
+    statusLabel: 'Finalizado', champion: 'Liverpool (Táchira FC)', hasFixture: true,
+  },
+  {
+    id: 't24', year: '2024', title: 'Super Copa de Ingeniería de Sistemas 2024',
+    teams: 10, status: 'done', format: ['Liga', 'Round-Robin'],
+    desc: 'Finalizado · 45 partidos jugados',
+    statusLabel: 'Finalizado', champion: 'Táchira FC', hasFixture: true,
+  },
+];
+
+let activeFilter = 'all';
+
+function counts() {
+  return {
+    all: TORNEOS.length,
+    active: TORNEOS.filter(t => t.status === 'active').length,
+    draft: TORNEOS.filter(t => t.status === 'draft').length,
+    done: TORNEOS.filter(t => t.status === 'done').length,
+  };
+}
+
+function renderFilters() {
+  const c = counts();
+  const opts = [
+    { id: 'all',    label: 'Todos',           n: c.all },
+    { id: 'active', label: 'En curso',        n: c.active },
+    { id: 'draft',  label: 'Sin configurar',  n: c.draft },
+    { id: 'done',   label: 'Finalizados',     n: c.done },
+  ];
+  document.getElementById('filters').innerHTML = opts.map(o =>
+    `<button class="filter-pill ${activeFilter === o.id ? 'active' : ''}" onclick="setFilter('${o.id}')">${o.label}<span class="fp-count">${o.n}</span></button>`
+  ).join('');
+}
+
+function setFilter(id) { activeFilter = id; renderFilters(); renderGrid(); }
+
+function renderGrid() {
+  const list = TORNEOS.filter(t => activeFilter === 'all' || t.status === activeFilter);
+
+  const cards = list.map((t, i) => {
+    const badgeCls = t.status === 'active' ? 'active' : t.status === 'draft' ? 'draft' : 'done';
+    const badgeLbl = t.status === 'active' ? 'Activo' : t.status === 'draft' ? 'Borrador' : 'Finalizado';
+
+    let statusBlock = '';
+    if (t.status === 'active') {
+      statusBlock = `<div class="t-status">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span>En curso</span>
+      </div>`;
+    } else if (t.status === 'draft') {
+      statusBlock = `<div class="t-status" style="color: var(--color-warning);">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>Falta configurar formato</span>
+      </div>`;
+    } else if (t.champion) {
+      statusBlock = `<div class="t-status done">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+        <span class="label">Campeón:</span>
+        <span style="color: var(--color-warning);">${t.champion}</span>
+      </div>`;
+    }
+
+    let actions = '';
+    if (t.status === 'draft') {
+      actions = `<a class="t-action-btn primary" href="Admin Configurar Torneo.html">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        Configurar formato
+      </a>`;
+    } else if (t.status === 'active' && !t.hasFixture) {
+      actions = `
+        <a class="t-action-btn primary" href="Admin Fixture.html?t=${t.id}">Generar fixture</a>
+        <a class="t-action-btn" href="Admin Configurar Torneo.html">Editar</a>`;
+    } else if (t.status === 'active') {
+      actions = `
+        <a class="t-action-btn primary" href="Admin Fixture.html?t=${t.id}">Ver fixture</a>
+        <a class="t-action-btn" href="Admin Configurar Torneo.html">Editar formato</a>`;
+    } else {
+      actions = `
+        <a class="t-action-btn" href="Admin Fixture.html?t=${t.id}">Ver fixture</a>
+        <a class="t-action-btn" href="#">Ver detalle</a>`;
+    }
+
+    return `<a class="hud-card" href="#" onclick="event.preventDefault();" style="animation-delay:${i*0.06}s">
+      <div class="hud-glow"></div>
+      <div class="corner-tr"></div>
+      <div class="corner-bl"></div>
+      <div class="t-year-bg">${t.year}</div>
+      <div class="t-badge ${badgeCls}"><div class="t-badge-dot"></div>${badgeLbl}</div>
+      <div class="t-title">${t.title}</div>
+      <div class="t-meta">${t.desc}</div>
+      <div class="t-format-chips">${t.format.map(f => `<span class="t-format-chip">${f}</span>`).join('')}</div>
+      <div class="t-divider"></div>
+      ${statusBlock}
+      <div class="t-actions">${actions}</div>
+    </a>`;
+  }).join('');
+
+  // Append create card
+  const createCard = `<a class="create-card" href="Admin Configurar Torneo.html" style="animation-delay:${list.length*0.06}s">
+    <div class="create-card-icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+    <div class="create-card-title">Crear nuevo torneo</div>
+    <div class="create-card-sub">Define nombre, fechas de inscripción y formato desde una plantilla.</div>
+  </a>`;
+
+  document.getElementById('torneos-grid').innerHTML = cards + createCard;
+}
+
+renderFilters();
+renderGrid();
+</script>
+</body>
+</html>

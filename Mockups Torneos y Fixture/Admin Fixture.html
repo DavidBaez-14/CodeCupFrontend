@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fixture y Cronograma · Code Cup Admin</title>
+<link rel="icon" href="assets/soccer-ball-sci-fi-192.png">
+<link rel="stylesheet" href="colors_and_type.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--color-bg); color: var(--color-fg); font-family: var(--font-body); min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+
+/* ── Shared admin shell ────────────────────────────────── */
+.shell { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+@media (max-width: 900px) { .shell { grid-template-columns: 1fr; } .sidebar { display: none; } }
+.sidebar { background: var(--navy-900); border-right: 1px solid var(--color-border); padding: 18px 0 24px; position: sticky; top: 0; height: 100vh; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,85,0,0.2) transparent; }
+.sb-brand { display: flex; align-items: center; gap: 10px; padding: 4px 22px 24px; border-bottom: 1px solid var(--color-border); margin-bottom: 18px; }
+.sb-brand img { width: 36px; height: 36px; border-radius: 8px; }
+.sb-brand-text { font-family: var(--font-display); font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: -0.01em; line-height: 1; }
+.sb-brand-text em { color: var(--color-brand); font-style: normal; }
+.sb-brand-sub { font-family: var(--font-ui); font-size: 8px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-top: 4px; }
+.sb-section-label { font-family: var(--font-ui); font-size: 9px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.3); padding: 14px 22px 8px; }
+.sb-link { display: flex; align-items: center; gap: 10px; padding: 10px 22px; font-family: var(--font-body); font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.55); text-decoration: none; border-left: 2px solid transparent; transition: all var(--duration-fast); cursor: pointer; }
+.sb-link:hover { color: var(--color-fg); background: rgba(255,255,255,0.02); }
+.sb-link.active { color: var(--color-fg); background: linear-gradient(90deg, rgba(255,85,0,0.08), transparent); border-left-color: var(--color-brand); }
+.sb-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.2); flex-shrink: 0; transition: all var(--duration-fast); }
+.sb-link.active .sb-dot { background: var(--color-brand); box-shadow: 0 0 8px var(--color-brand-glow); }
+.sb-prox { margin-left: auto; font-family: var(--font-ui); font-size: 8px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.3); padding: 3px 7px; border-radius: 3px; border: 1px solid var(--color-border); }
+.sb-badge { margin-left: auto; font-family: var(--font-mono); font-size: 10px; font-weight: 700; background: rgba(255,85,0,0.2); color: var(--color-brand); padding: 2px 7px; border-radius: 100px; }
+
+.main { display: flex; flex-direction: column; min-width: 0; }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 22px 32px 14px; gap: 16px; }
+.crumbs { font-family: var(--font-ui); font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.35); }
+.crumbs span { color: rgba(255,255,255,0.7); }
+.user-pill { display: flex; align-items: center; gap: 8px; padding: 5px 14px 5px 5px; background: rgba(255,255,255,0.04); border: 1px solid var(--color-border); border-radius: 100px; }
+.user-pill-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--color-brand), var(--orange-700)); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 900; font-size: 12px; color: #fff; }
+.user-pill-name { font-family: var(--font-ui); font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.85); }
+
+.page { padding: 8px 32px 48px; flex: 1; }
+.page-title { font-family: var(--font-display); font-size: clamp(32px, 4vw, 44px); font-weight: 900; letter-spacing: -0.02em; line-height: 1; margin-bottom: 8px; }
+.page-title em { color: var(--color-brand); font-style: normal; }
+.page-subtitle { font-family: var(--font-body); font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 24px; max-width: 620px; line-height: 1.5; }
+
+/* ── TOURNAMENT SELECTOR ───────────────────────────────── */
+.tournament-selector {
+  display: grid; grid-template-columns: 1fr; gap: 14px;
+  margin-bottom: 28px;
+}
+.selector-label { font-family: var(--font-ui); font-size: 9px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 8px; }
+.selector-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.tsel-card {
+  background: var(--color-bg-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  cursor: pointer; text-align: left;
+  font: inherit; color: inherit;
+  transition: all var(--duration-fast) var(--ease-smooth);
+  position: relative; overflow: hidden;
+}
+.tsel-card:hover { border-color: rgba(255,85,0,0.3); transform: translateY(-2px); }
+.tsel-card.active {
+  border-color: var(--color-brand);
+  background: linear-gradient(135deg, rgba(255,85,0,0.08), rgba(255,85,0,0.02));
+  box-shadow: 0 0 0 1px var(--color-brand) inset, 0 6px 20px rgba(255,85,0,0.15);
+}
+.tsel-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.tsel-name { font-family: var(--font-display); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; line-height: 1.1; }
+.tsel-mini-badge { font-family: var(--font-ui); font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; }
+.tsel-mini-badge.active { background: rgba(255,85,0,0.15); color: var(--color-brand); border: 1px solid rgba(255,85,0,0.3); }
+.tsel-mini-badge.draft { background: rgba(250,204,21,0.12); color: var(--color-warning); border: 1px solid rgba(250,204,21,0.3); }
+.tsel-meta { font-family: var(--font-body); font-size: 11px; color: rgba(255,255,255,0.4); }
+
+/* ── SUMMARY BLOCK ─────────────────────────────────────── */
+.summary {
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 0;
+  background: linear-gradient(135deg, rgba(30,45,90,0.4), rgba(9,14,28,0.6));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px;
+  margin-bottom: 28px;
+}
+.summary-cell { padding: 0 16px; border-right: 1px solid rgba(255,255,255,0.05); }
+.summary-cell:first-child { padding-left: 0; }
+.summary-cell:last-child { padding-right: 0; border-right: none; }
+.summary-val { font-family: var(--font-display); font-size: 24px; font-weight: 900; color: var(--color-fg); line-height: 1; }
+.summary-val em { color: var(--color-brand); font-style: normal; }
+.summary-lbl { font-family: var(--font-ui); font-size: 8px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-top: 4px; }
+@media (max-width: 720px) { .summary { grid-template-columns: 1fr 1fr; gap: 16px; } .summary-cell { border-right: none; padding: 0; } }
+
+/* ── BIG GENERATE CTA ──────────────────────────────────── */
+.gen-card {
+  background: linear-gradient(135deg, rgba(255,85,0,0.07), rgba(9,14,28,0.5));
+  border: 1px solid rgba(255,85,0,0.25);
+  border-radius: var(--radius-lg);
+  padding: 28px 28px 28px;
+  margin-bottom: 28px;
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 22px;
+  position: relative; overflow: hidden;
+}
+.gen-card::before {
+  content: ''; position: absolute; top: -40px; right: -40px;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,85,0,0.15), transparent 60%);
+  pointer-events: none;
+}
+.gen-icon {
+  width: 56px; height: 56px; border-radius: var(--radius-md);
+  background: rgba(255,85,0,0.18); color: var(--color-brand);
+  border: 1px solid rgba(255,85,0,0.4);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 1;
+  animation: iconFloat 3s ease-in-out infinite;
+}
+@keyframes iconFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.gen-text { position: relative; z-index: 1; }
+.gen-title { font-family: var(--font-display); font-size: 20px; font-weight: 900; text-transform: uppercase; letter-spacing: -0.01em; line-height: 1.1; margin-bottom: 6px; }
+.gen-sub { font-family: var(--font-body); font-size: 12px; color: rgba(255,255,255,0.55); max-width: 480px; line-height: 1.5; }
+.btn-generate {
+  position: relative; overflow: hidden; z-index: 1;
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: var(--font-ui); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  background: var(--color-brand); color: #fff;
+  border: none; border-radius: var(--radius-md);
+  padding: 14px 22px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(255,85,0,0.4);
+  transition: transform var(--duration-fast) var(--ease-spring), box-shadow var(--duration-fast);
+}
+.btn-generate:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(255,85,0,0.55); }
+.btn-generate:active { transform: scale(0.97); }
+.btn-generate::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+  transform: translateX(-100%);
+}
+.btn-generate.shimmer::before { animation: shimmer 1.6s var(--ease-smooth) infinite; }
+@keyframes shimmer { to { transform: translateX(100%); } }
+.btn-generate:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.gen-sparkle {
+  display: inline-block;
+  animation: spin 1.4s var(--ease-spring) infinite;
+}
+@keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+@media (max-width: 720px) { .gen-card { grid-template-columns: 1fr; text-align: center; } .gen-icon { margin: 0 auto; } }
+
+/* warning if fixture exists */
+.warn-banner {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: rgba(250,204,21,0.08);
+  border: 1px solid rgba(250,204,21,0.3);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  font-family: var(--font-body); font-size: 12px; color: rgba(255,255,255,0.75); line-height: 1.5;
+}
+.warn-banner svg { color: var(--color-warning); flex-shrink: 0; margin-top: 1px; }
+.warn-banner strong { color: var(--color-warning); }
+
+/* ── FIXTURE PROGRESS (generation animation) ───────────── */
+.progress-stage {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 28px;
+  display: none;
+}
+.progress-stage.show { display: block; animation: fadeIn 0.3s var(--ease-smooth) both; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.progress-title { font-family: var(--font-display); font-size: 16px; font-weight: 800; text-transform: uppercase; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+.progress-title .pt-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-brand); box-shadow: 0 0 8px var(--color-brand); animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+.progress-list { display: flex; flex-direction: column; gap: 8px; }
+.progress-step { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-family: var(--font-body); font-size: 13px; color: rgba(255,255,255,0.5); }
+.progress-step .ps-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); font-family: var(--font-mono); font-size: 10px; font-weight: 700; }
+.progress-step.done .ps-icon { background: rgba(34,197,94,0.18); color: var(--color-success); }
+.progress-step.active { color: var(--color-fg); }
+.progress-step.active .ps-icon { background: rgba(255,85,0,0.18); color: var(--color-brand); animation: pulse 1.2s ease-in-out infinite; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-top: 16px; }
+.progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--color-brand), var(--orange-300)); transition: width 0.4s var(--ease-smooth); box-shadow: 0 0 12px rgba(255,85,0,0.5); }
+
+/* ── FIXTURE RESULT ────────────────────────────────────── */
+.fixture-section { display: none; margin-bottom: 28px; }
+.fixture-section.show { display: block; animation: fadeIn 0.4s var(--ease-smooth) both; }
+.fixture-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
+.fixture-title { font-family: var(--font-display); font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+.fixture-title .check-icon { color: var(--color-success); }
+.fixture-actions { display: flex; gap: 6px; }
+.btn-sec {
+  font-family: var(--font-ui); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.7);
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  padding: 9px 14px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px;
+  transition: all var(--duration-fast);
+}
+.btn-sec:hover { color: var(--color-brand); border-color: rgba(255,85,0,0.4); background: rgba(255,85,0,0.05); }
+.btn-sec.danger:hover { color: var(--color-error); border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.06); }
+
+/* Jornada accordion */
+.jornada {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 10px;
+  overflow: hidden;
+  animation: jornadaIn 0.45s var(--ease-spring) both;
+}
+@keyframes jornadaIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.jornada-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px; cursor: pointer;
+  transition: background var(--duration-fast);
+}
+.jornada-head:hover { background: rgba(255,255,255,0.02); }
+.jornada-num {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: rgba(255,85,0,0.15); color: var(--color-brand);
+  border: 1px solid rgba(255,85,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 12px; font-weight: 900;
+}
+.jornada-title { font-family: var(--font-display); font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; }
+.jornada-meta { font-family: var(--font-body); font-size: 11px; color: rgba(255,255,255,0.4); }
+.jornada-grupo-tag {
+  font-family: var(--font-ui); font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 3px; background: rgba(29,111,245,0.1); color: var(--blue-300); border: 1px solid rgba(29,111,245,0.25);
+}
+.jornada-chevron {
+  margin-left: auto; color: rgba(255,255,255,0.4);
+  transition: transform var(--duration-normal) var(--ease-spring);
+}
+.jornada.open .jornada-chevron { transform: rotate(180deg); color: var(--color-brand); }
+.jornada-body {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.4s var(--ease-smooth);
+}
+.jornada.open .jornada-body { max-height: 1200px; }
+.matches-grid { padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 8px; }
+.match-row {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: center; gap: 12px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  transition: border-color var(--duration-fast);
+}
+.match-row:hover { border-color: rgba(255,85,0,0.2); }
+.mr-team { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.mr-team.away { flex-direction: row-reverse; text-align: right; }
+.mr-avatar {
+  width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 10px; font-weight: 900; color: #fff;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.mr-name { font-family: var(--font-body); font-size: 12px; font-weight: 700; color: var(--color-fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mr-center { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; min-width: 80px; }
+.mr-vs { font-family: var(--font-ui); font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+.mr-date {
+  font-family: var(--font-mono); font-size: 10px; color: rgba(255,255,255,0.5);
+  padding: 2px 6px; border-radius: 3px; background: rgba(255,255,255,0.04);
+}
+
+/* ── EMPTY STATE ───────────────────────────────────────── */
+.no-fixture-state {
+  text-align: center; padding: 48px 24px;
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+}
+.no-fixture-state-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 14px; color: rgba(255,255,255,0.3);
+}
+.no-fixture-state-title { font-family: var(--font-display); font-size: 16px; font-weight: 800; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 6px; }
+.no-fixture-state-sub { font-family: var(--font-body); font-size: 12px; color: rgba(255,255,255,0.35); max-width: 360px; margin: 0 auto; line-height: 1.5; }
+
+.toast { position: fixed; bottom: 24px; right: 24px; background: rgba(20,30,50,0.97); backdrop-filter: blur(12px); border: 1px solid rgba(34,197,94,0.4); border-radius: var(--radius-md); padding: 12px 18px; font-family: var(--font-ui); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-fg); z-index: var(--z-toast); display: flex; align-items: center; gap: 8px; opacity: 0; transform: translateY(20px); pointer-events: none; transition: opacity 220ms var(--ease-smooth), transform 220ms var(--ease-spring); }
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast svg { color: var(--color-success); flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+<aside class="sidebar">
+  <div class="sb-brand">
+    <img src="assets/soccer-ball-sci-fi-192.png" alt="Code Cup">
+    <div>
+      <div class="sb-brand-text"><em>Code</em> Cup</div>
+      <div class="sb-brand-sub">Panel de Administrador</div>
+    </div>
+  </div>
+  <div class="sb-section-label">Identidad</div>
+  <a class="sb-link"><span class="sb-dot"></span>Solicitudes pendientes</a>
+  <a class="sb-link"><span class="sb-dot"></span>Cargar jugadores CSV</a>
+  <a class="sb-link"><span class="sb-dot"></span>Buscar jugador</a>
+  <a class="sb-link" href="Admin Usuarios.html"><span class="sb-dot"></span>Usuarios <span class="sb-badge">24</span></a>
+
+  <div class="sb-section-label">Torneo</div>
+  <a class="sb-link" href="Admin Torneos.html"><span class="sb-dot"></span>Torneos</a>
+  <a class="sb-link"><span class="sb-dot"></span>Gestionar equipos</a>
+  <a class="sb-link active"><span class="sb-dot"></span>Fixture y cronograma</a>
+  <a class="sb-link"><span class="sb-dot"></span>Aplazamientos <span class="sb-prox">Próx.</span></a>
+
+  <div class="sb-section-label">Finanzas</div>
+  <a class="sb-link"><span class="sb-dot"></span>Comprobantes pendientes <span class="sb-prox">Próx.</span></a>
+  <a class="sb-link"><span class="sb-dot"></span>Multas activas <span class="sb-prox">Próx.</span></a>
+
+  <div class="sb-section-label">Reportes</div>
+  <a class="sb-link"><span class="sb-dot"></span>Estadísticas <span class="sb-prox">Próx.</span></a>
+  <a class="sb-link"><span class="sb-dot"></span>Reporte PDF <span class="sb-prox">Próx.</span></a>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="crumbs">Dashboard / Torneo / <span>Fixture y cronograma</span></div>
+    <div class="user-pill"><div class="user-pill-avatar">A</div><span class="user-pill-name">Administrador</span></div>
+  </header>
+
+  <section class="page">
+    <h1 class="page-title">Fixture y <em>Cronograma</em></h1>
+    <p class="page-subtitle">Selecciona un torneo y genera los cruces automáticamente según el formato configurado. Después podrás reprogramar partidos individuales.</p>
+
+    <!-- TOURNAMENT SELECTOR -->
+    <div class="tournament-selector">
+      <div>
+        <div class="selector-label">Selecciona un torneo</div>
+        <div class="selector-cards" id="selector-cards"></div>
+      </div>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="summary" id="summary"></div>
+
+    <!-- WARNING IF FIXTURE EXISTS -->
+    <div class="warn-banner" id="warn-banner" style="display:none;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div><strong>Este torneo ya tiene un fixture generado.</strong> Regenerarlo borrará los partidos actuales y creará uno nuevo desde cero. Los resultados ya registrados se perderán.</div>
+    </div>
+
+    <!-- GENERATE CTA -->
+    <div class="gen-card" id="gen-card">
+      <div class="gen-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c2.39 0 4.68.94 6.36 2.64"/></svg>
+      </div>
+      <div class="gen-text">
+        <div class="gen-title">Generar fixture automáticamente</div>
+        <div class="gen-sub" id="gen-sub">El sistema creará todas las jornadas y cruces respetando el formato configurado. Los partidos quedarán como pendientes para que el árbitro los gestione.</div>
+      </div>
+      <button class="btn-generate" id="btn-generate" onclick="generateFixture()">
+        <span class="gen-sparkle">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </span>
+        Generar Fixture
+      </button>
+    </div>
+
+    <!-- PROGRESS STAGE -->
+    <div class="progress-stage" id="progress-stage">
+      <div class="progress-title"><span class="pt-dot"></span>Generando cruces...</div>
+      <div class="progress-list" id="progress-list"></div>
+      <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill"></div></div>
+    </div>
+
+    <!-- FIXTURE RESULT -->
+    <div class="fixture-section" id="fixture-section">
+      <div class="fixture-head">
+        <div class="fixture-title">
+          <span class="check-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          Fixture Generado
+        </div>
+        <div class="fixture-actions">
+          <button class="btn-sec" onclick="toggleAllJornadas()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>Expandir/Colapsar</button>
+          <button class="btn-sec" onclick="exportFixture()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar CSV</button>
+          <button class="btn-sec danger" onclick="resetFixture()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>Borrar y regenerar</button>
+        </div>
+      </div>
+      <div id="jornadas-container"></div>
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div class="no-fixture-state" id="no-fixture-state" style="display:none;">
+      <div class="no-fixture-state-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </div>
+      <div class="no-fixture-state-title">Aún sin fixture</div>
+      <div class="no-fixture-state-sub">Pulsa "Generar Fixture" arriba para crear automáticamente todos los cruces de este torneo.</div>
+    </div>
+
+  </section>
+</div>
+</div>
+
+<div class="toast" id="toast">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-msg">Listo</span>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════════════════ */
+const TEAM_COLORS = {
+  'Inglaterra':'#ef4444','Francia':'#60a5fa','Combo de TITI':'#ff5500','Japón':'#e879f9',
+  'Bélgica':'#fb7185','Argentina':'#38bdf8','Países Bajos':'#f59e0b','Colombia':'#1d6ff5',
+  'Brasil':'#facc15','Portugal':'#22c55e','Marruecos':'#f97316','Noruega':'#a78bfa','Alemania':'#9898a8',
+  'Equipo 1':'#9898a8','Equipo 2':'#9898a8','Equipo 3':'#9898a8','Equipo 4':'#9898a8','Equipo 5':'#9898a8','Equipo 6':'#9898a8','Equipo 7':'#9898a8','Equipo 8':'#9898a8','Equipo 9':'#9898a8','Equipo 10':'#9898a8',
+};
+
+const TOURNAMENTS = [
+  {
+    id: 't26',
+    name: 'Super Copa – Copa del Mundo 2026',
+    status: 'active',
+    teams: 13,
+    format: 'Grupos + Repechaje',
+    groups: 2,
+    rounds: ['Cuartos','Semis','Final'],
+    repechage: true,
+    matchesEstimate: 28,
+    hasFixture: true,
+    groupA: ['Inglaterra','Francia','Combo de TITI','Japón','Bélgica','Argentina','Países Bajos'],
+    groupB: ['Colombia','Brasil','Portugal','Marruecos','Noruega','Alemania'],
+  },
+  {
+    id: 't26b',
+    name: 'Copa Inicio 2026-II',
+    status: 'draft',
+    teams: 0,
+    format: 'Por configurar',
+    groups: 0,
+    rounds: [],
+    repechage: false,
+    matchesEstimate: 0,
+    hasFixture: false,
+    groupA: [], groupB: [],
+  },
+];
+
+let activeTournamentId = TOURNAMENTS[0].id;
+let fixtureData = null;
+
+/* ════════════════════════════════════════════════════════
+   RENDER SELECTOR + SUMMARY
+═══════════════════════════════════════════════════════ */
+function renderSelector() {
+  document.getElementById('selector-cards').innerHTML = TOURNAMENTS.map(t => {
+    const badge = t.status === 'active' ? 'active' : 'draft';
+    const badgeLbl = t.status === 'active' ? 'Activo' : 'Borrador';
+    return `<button class="tsel-card ${activeTournamentId === t.id ? 'active' : ''}" onclick="selectTournament('${t.id}')">
+      <div class="tsel-card-head">
+        <div class="tsel-name">${t.name}</div>
+        <span class="tsel-mini-badge ${badge}">${badgeLbl}</span>
+      </div>
+      <div class="tsel-meta">${t.teams} equipos · ${t.format}</div>
+    </button>`;
+  }).join('');
+}
+
+function selectTournament(id) {
+  activeTournamentId = id;
+  fixtureData = null;
+  document.getElementById('fixture-section').classList.remove('show');
+  document.getElementById('progress-stage').classList.remove('show');
+  document.getElementById('no-fixture-state').style.display = 'none';
+  renderSelector();
+  renderSummary();
+}
+
+function currentTournament() { return TOURNAMENTS.find(t => t.id === activeTournamentId); }
+
+function renderSummary() {
+  const t = currentTournament();
+  const cells = [
+    { val: t.teams, lbl: 'Equipos inscritos' },
+    { val: t.groups || '—', lbl: 'Grupos' },
+    { val: t.rounds.length, lbl: 'Rondas eliminatorias' },
+    { val: t.repechage ? 'Sí' : 'No', lbl: 'Repechaje' },
+    { val: t.matchesEstimate || '—', lbl: 'Partidos estimados' },
+  ];
+  document.getElementById('summary').innerHTML = cells.map(c =>
+    `<div class="summary-cell">
+      <div class="summary-val"><em>${c.val}</em></div>
+      <div class="summary-lbl">${c.lbl}</div>
+    </div>`
+  ).join('');
+
+  // Generate card state
+  const genCard = document.getElementById('gen-card');
+  const genSub = document.getElementById('gen-sub');
+  const btn = document.getElementById('btn-generate');
+  if (t.status === 'draft') {
+    genCard.style.opacity = 0.5;
+    btn.disabled = true;
+    genSub.textContent = 'Este torneo aún no tiene formato configurado. Configúralo primero antes de generar el fixture.';
+  } else {
+    genCard.style.opacity = 1;
+    btn.disabled = false;
+    genSub.textContent = `El sistema creará ${t.matchesEstimate} partidos respetando el formato "${t.format}" — ${t.groups > 0 ? `${t.groups} grupos + ` : ''}${t.rounds.join(' + ')}.`;
+  }
+
+  // Warning if already has fixture
+  document.getElementById('warn-banner').style.display = t.hasFixture ? '' : 'none';
+}
+
+/* ════════════════════════════════════════════════════════
+   GENERATE FIXTURE — round-robin per group
+═══════════════════════════════════════════════════════ */
+function roundRobin(teams) {
+  // Returns array of rounds, each round is array of [home, away] pairs
+  const arr = [...teams];
+  if (arr.length % 2 === 1) arr.push('__BYE__');
+  const n = arr.length;
+  const rounds = [];
+  for (let r = 0; r < n - 1; r++) {
+    const round = [];
+    for (let i = 0; i < n / 2; i++) {
+      const a = arr[i], b = arr[n - 1 - i];
+      if (a !== '__BYE__' && b !== '__BYE__') {
+        // alternate home/away by round parity to balance
+        round.push(r % 2 === 0 ? [a, b] : [b, a]);
+      }
+    }
+    rounds.push(round);
+    // rotate (keep first fixed)
+    arr.splice(1, 0, arr.pop());
+  }
+  return rounds;
+}
+
+function generateFixture() {
+  const t = currentTournament();
+  if (t.status === 'draft') { toast('Configura primero el formato del torneo'); return; }
+
+  // Show progress
+  document.getElementById('fixture-section').classList.remove('show');
+  document.getElementById('no-fixture-state').style.display = 'none';
+  const stage = document.getElementById('progress-stage');
+  stage.classList.add('show');
+
+  const steps = [
+    'Leyendo configuración del formato',
+    'Sembrando equipos en grupos',
+    'Calculando cruces por jornada (round-robin)',
+    'Asignando fechas y horarios sugeridos',
+    'Validando que ningún equipo juegue 2 veces el mismo día',
+    'Guardando fixture en base de datos',
+  ];
+  const list = document.getElementById('progress-list');
+  list.innerHTML = steps.map((s, i) => `<div class="progress-step" id="ps-${i}"><div class="ps-icon">${i+1}</div>${s}</div>`).join('');
+  const fill = document.getElementById('progress-fill');
+  fill.style.width = '0%';
+
+  // Animate steps
+  let i = 0;
+  function nextStep() {
+    document.querySelectorAll('.progress-step').forEach(el => el.classList.remove('active'));
+    if (i > 0) {
+      const prev = document.getElementById(`ps-${i-1}`);
+      prev.classList.add('done');
+      prev.querySelector('.ps-icon').innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+    }
+    if (i < steps.length) {
+      document.getElementById(`ps-${i}`).classList.add('active');
+      fill.style.width = `${((i+1) / steps.length) * 100}%`;
+      i++;
+      setTimeout(nextStep, 320);
+    } else {
+      // Build the fixture data
+      buildFixtureData();
+      setTimeout(() => {
+        stage.classList.remove('show');
+        document.getElementById('fixture-section').classList.add('show');
+        renderFixture();
+        toast(`${fixtureData.totalMatches} partidos creados`);
+      }, 400);
+    }
+  }
+  setTimeout(nextStep, 240);
+}
+
+function buildFixtureData() {
+  const t = currentTournament();
+  const jornadas = [];
+
+  if (t.groups > 0) {
+    const rrA = roundRobin(t.groupA);
+    const rrB = roundRobin(t.groupB);
+    const maxRounds = Math.max(rrA.length, rrB.length);
+    let dayCounter = 0;
+    for (let r = 0; r < maxRounds; r++) {
+      if (rrA[r]) {
+        dayCounter++;
+        jornadas.push({
+          label: `Fecha ${r+1}`, grupo: 'A',
+          date: dateLabel(dayCounter), time: '11:00 AM',
+          matches: rrA[r],
+        });
+      }
+      if (rrB[r]) {
+        dayCounter++;
+        jornadas.push({
+          label: `Fecha ${r+1}`, grupo: 'B',
+          date: dateLabel(dayCounter), time: '11:00 AM',
+          matches: rrB[r],
+        });
+      }
+    }
+  }
+
+  // Add playoff stages
+  let playoffStartDay = jornadas.length + 1;
+  if (t.repechage) {
+    jornadas.push({
+      label: 'Repechaje', grupo: '—',
+      date: dateLabel(playoffStartDay++), time: '10:00 AM',
+      matches: [
+        ['4° Grupo A', '3° Grupo B'],
+        ['3° Grupo A', '4° Grupo B'],
+        ['6° Grupo A', '5° Grupo B'],
+        ['5° Grupo A', '6° Grupo B'],
+      ],
+      playoff: true,
+    });
+  }
+  if (t.rounds.includes('Cuartos')) {
+    jornadas.push({
+      label: 'Cuartos de Final', grupo: '—',
+      date: dateLabel(playoffStartDay++), time: '10:00 AM',
+      matches: [
+        ['1° Grupo A', 'Gan. Rep. 1'],
+        ['1° Grupo B', 'Gan. Rep. 2'],
+        ['2° Grupo A', 'Gan. Rep. 3'],
+        ['2° Grupo B', 'Gan. Rep. 4'],
+      ],
+      playoff: true,
+    });
+  }
+  if (t.rounds.includes('Semis')) {
+    jornadas.push({
+      label: 'Semifinales', grupo: '—',
+      date: dateLabel(playoffStartDay++), time: '11:00 AM',
+      matches: [['Gan. CF 1', 'Gan. CF 2'], ['Gan. CF 3', 'Gan. CF 4']],
+      playoff: true,
+    });
+  }
+  if (t.rounds.includes('Final')) {
+    jornadas.push({
+      label: 'Gran Final', grupo: '—',
+      date: dateLabel(playoffStartDay++), time: '3:00 PM',
+      matches: [['Gan. SF 1', 'Gan. SF 2']],
+      playoff: true, isFinal: true,
+    });
+  }
+
+  fixtureData = {
+    jornadas,
+    totalMatches: jornadas.reduce((a, j) => a + j.matches.length, 0),
+  };
+}
+
+function dateLabel(dayIndex) {
+  // Synthetic dates starting May 12
+  const base = new Date(2026, 4, 11); // May 11 = index 0
+  const d = new Date(base.getTime() + dayIndex * 24 * 60 * 60 * 1000);
+  const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return `${months[d.getMonth()]} ${d.getDate()}`;
+}
+
+/* ════════════════════════════════════════════════════════
+   RENDER FIXTURE
+═══════════════════════════════════════════════════════ */
+function initials(name) {
+  const p = name.split(' ');
+  if (p.length === 1) return name.substring(0,2).toUpperCase();
+  return (p[0][0] + p[p.length-1][0]).toUpperCase();
+}
+function teamColor(name) { return TEAM_COLORS[name] || '#3d4f80'; }
+
+function renderFixture() {
+  if (!fixtureData) return;
+  const html = fixtureData.jornadas.map((j, idx) => {
+    const matchesHtml = j.matches.map(([h, a]) => {
+      const hc = teamColor(h), ac = teamColor(a);
+      return `<div class="match-row">
+        <div class="mr-team">
+          <div class="mr-avatar" style="background:${hc}22;border-color:${hc}44;">${initials(h)}</div>
+          <div class="mr-name">${h}</div>
+        </div>
+        <div class="mr-center">
+          <span class="mr-vs">vs</span>
+          <span class="mr-date">${j.date} · ${j.time}</span>
+        </div>
+        <div class="mr-team away">
+          <div class="mr-avatar" style="background:${ac}22;border-color:${ac}44;">${initials(a)}</div>
+          <div class="mr-name">${a}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const grupoTag = j.grupo !== '—'
+      ? `<span class="jornada-grupo-tag">Grupo ${j.grupo}</span>`
+      : `<span class="jornada-grupo-tag" style="background: rgba(255,85,0,0.1); color: var(--color-brand); border-color: rgba(255,85,0,0.25);">${j.isFinal ? 'Final' : 'Eliminatorias'}</span>`;
+
+    return `<div class="jornada${idx < 2 ? ' open' : ''}" style="animation-delay:${idx*0.05}s">
+      <div class="jornada-head" onclick="this.parentElement.classList.toggle('open')">
+        <div class="jornada-num">${idx+1}</div>
+        <div>
+          <div class="jornada-title">${j.label}</div>
+          <div class="jornada-meta">${j.date} · ${j.time} · ${j.matches.length} ${j.matches.length === 1 ? 'partido' : 'partidos'}</div>
+        </div>
+        ${grupoTag}
+        <div class="jornada-chevron">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="jornada-body">
+        <div class="matches-grid">${matchesHtml}</div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('jornadas-container').innerHTML = html;
+}
+
+function toggleAllJornadas() {
+  const all = document.querySelectorAll('.jornada');
+  const someClosed = [...all].some(j => !j.classList.contains('open'));
+  all.forEach(j => j.classList.toggle('open', someClosed));
+}
+
+function exportFixture() { toast('Fixture exportado a CSV'); }
+
+function resetFixture() {
+  if (!confirm('Esto borrará el fixture actual. ¿Continuar?')) return;
+  fixtureData = null;
+  document.getElementById('fixture-section').classList.remove('show');
+  document.getElementById('no-fixture-state').style.display = '';
+  toast('Fixture borrado');
+}
+
+/* ════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════ */
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+/* INIT */
+// Pick up ?t= param if present
+const params = new URLSearchParams(window.location.search);
+const paramT = params.get('t');
+if (paramT && TOURNAMENTS.find(x => x.id === paramT)) activeTournamentId = paramT;
+
+renderSelector();
+renderSummary();
+
+// If tournament already has a fixture, auto-render it (mocked)
+if (currentTournament().hasFixture) {
+  buildFixtureData();
+  document.getElementById('fixture-section').classList.add('show');
+  renderFixture();
+}
+</script>
+
+</body>
+</html>

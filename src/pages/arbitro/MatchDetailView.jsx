@@ -10,25 +10,65 @@ const TABS = [
   { id: 'excepciones', label: 'Excepciones' },
 ];
 
-function MatchDetailView({ match, onTogglePlayer, onAddAll, onAddEvent, onDeleteEvent, onCloseMatch, onWO, onCancel }) {
+/**
+ * Vista de gestión de un partido. Sirve para árbitro y admin.
+ *  - mode='arbitro': flujo normal de gestión.
+ *  - mode='admin'  : muestra botón "Reabrir" cuando el partido ya está cerrado.
+ */
+function MatchDetailView({
+  match,
+  mode = 'arbitro',
+  onTogglePlayer,
+  onAddAll,
+  onAddEvent,
+  onDeleteEvent,
+  onCloseMatch,
+  onWO,
+  onCancel,
+  onReopen,
+}) {
   const [activeTab, setActiveTab] = useState('alineacion');
 
   const hc = teamColor(match.home);
   const ac = teamColor(match.away);
 
   const statusChip = (() => {
-    if (match.status === 'played')   return { cls: 'played',   label: 'Finalizado'  };
+    if (match.status === 'played')   return { cls: 'played',   label: match.estado === 'WO' ? 'W.O.' : 'Finalizado'  };
     if (match.events?.length === 0)  return { cls: 'upcoming', label: 'Por iniciar' };
     return { cls: '', label: 'En curso' };
   })();
+
+  const canReopen = mode === 'admin'
+    && (match.estado === 'FINALIZADO' || match.estado === 'WO');
 
   return (
     <div className="ar-view ar-view-detail">
       <div className="ar-scoreboard">
         <div className="ar-sb-context">
-          <span className="ar-context-badge">Fecha {match.fecha} · Grupo {match.grupo}</span>
-          <span className="ar-context-dot" />
-          <span className="ar-context-text">{match.date} · {match.hora}</span>
+          {match.fecha && <span className="ar-context-badge">Jornada {match.fecha}</span>}
+          {match.grupo && (
+            <>
+              <span className="ar-context-dot" />
+              <span className="ar-context-badge">{match.grupo.startsWith('Grupo ') || match.grupo.length === 1 ? `Grupo ${match.grupo}` : match.grupo}</span>
+            </>
+          )}
+          {match.date && (
+            <>
+              <span className="ar-context-dot" />
+              <span className="ar-context-text">{match.date} · {match.hora}</span>
+            </>
+          )}
+          {canReopen && onReopen && (
+            <button
+              type="button"
+              className="action-button ghost"
+              style={{ marginLeft: 'auto' }}
+              onClick={onReopen}
+              title="Reabrir el partido para hacer cambios (solo admin)"
+            >
+              Reabrir partido
+            </button>
+          )}
         </div>
         <div className="ar-sb-row">
           <div className="ar-sb-team">

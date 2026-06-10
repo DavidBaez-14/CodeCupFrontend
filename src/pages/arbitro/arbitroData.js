@@ -22,11 +22,15 @@ export const EVENT_LABELS = {
 };
 
 export function initials(name) {
-  const parts = name.split(' ');
-  if (parts.length === 1) return name.substring(0, 2).toUpperCase();
+  if (!name || typeof name !== 'string') return '?';
+  const trimmed = name.trim();
+  if (!trimmed) return '?';
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) return trimmed.substring(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 export function teamColor(name) {
+  if (!name) return '#3d4f80';
   return TEAM_COLORS[name] || '#3d4f80';
 }
