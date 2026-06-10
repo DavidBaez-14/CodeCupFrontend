@@ -219,23 +219,25 @@ function JugadorDashboard() {
               <p>Selecciona un torneo y solicita ingreso a un equipo inscrito.</p>
             </header>
 
-            <div className="inline-search">
-              <label className="form-label" htmlFor="torneo-jug">Torneo:</label>
-              <select
-                id="torneo-jug"
-                className="form-input"
-                value={torneoId}
-                onChange={(e) => setTorneoId(e.target.value)}
-                disabled={loadingTorneos || torneos.length === 0}
-              >
-                {torneos.length === 0 ? (
-                  <option value="">— Sin torneos disponibles —</option>
-                ) : (
-                  torneos.map((t) => (
-                    <option key={t.id} value={t.id}>{t.nombre} ({t.estado})</option>
-                  ))
-                )}
-              </select>
+            <div className="equipo-filter-bar">
+              <div className="equipo-filter-field">
+                <label className="form-label" htmlFor="torneo-jug">Torneo</label>
+                <select
+                  id="torneo-jug"
+                  className="form-input"
+                  value={torneoId}
+                  onChange={(e) => setTorneoId(e.target.value)}
+                  disabled={loadingTorneos || torneos.length === 0}
+                >
+                  {torneos.length === 0 ? (
+                    <option value="">— Sin torneos disponibles —</option>
+                  ) : (
+                    torneos.map((t) => (
+                      <option key={t.id} value={t.id}>{t.nombre} ({t.estado})</option>
+                    ))
+                  )}
+                </select>
+              </div>
               <button type="button" className="action-button ghost" onClick={loadEquipos} disabled={loadingEquipos}>
                 {loadingEquipos ? 'Refrescando…' : 'Refrescar'}
               </button>
@@ -275,17 +277,17 @@ function JugadorDashboard() {
 
                   return (
                     <div key={eq.equipoTorneoId} className="equipo-card">
-                      <span
-                        className="equipo-dot"
-                        style={{ backgroundColor: TEAM_COLORS[eq.equipoNombre] || '#3d4f80' }}
-                        aria-hidden="true"
-                      />
-                      <div className="equipo-info">
-                        <h3>{eq.equipoNombre}</h3>
-                        <p>{subtext}</p>
+                      <div className="equipo-card-top">
+                        <span
+                          className="equipo-dot"
+                          style={{ backgroundColor: TEAM_COLORS[eq.equipoNombre] || '#3d4f80' }}
+                          aria-hidden="true"
+                        />
+                        <h3 className="equipo-card-nombre">{eq.equipoNombre}</h3>
                       </div>
+                      <p className="equipo-card-sub">{subtext}</p>
                       <button
-                        className="action-button ghost"
+                        className="action-button ghost equipo-card-btn"
                         type="button"
                         style={btnStyle}
                         disabled={locked || enviandoEste}

@@ -16,6 +16,7 @@ import SalonDeLaFama from './pages/SalonDeLaFama';
 import SignupPage from './pages/SignupPage';
 import TorneoActivo from './pages/TorneoActivo';
 import Torneos from './pages/Torneos';
+import JugadorPreview from './pages/dev/JugadorPreview';
 import './styles/app-shell.css';
 
 function App() {
