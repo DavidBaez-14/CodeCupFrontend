@@ -963,7 +963,7 @@ function ConfiguracionFinanzas({ torneoId, configTorneo, onChanged }) {
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
 
-  const [formInscripcion, setFormInscripcion] = useState({ valor: '', metodo: '', detalle: '' });
+  const [formInscripcion, setFormInscripcion] = useState({ monto: '', bancoDestino: '', cuentaDestino: '', titularCuenta: '' });
   const [formMultas, setFormMultas] = useState({
     montoAmarilla: '', montoAzul: '', montoRoja: '', fechasSuspensionRoja: 1
   });
@@ -980,9 +980,10 @@ function ConfiguracionFinanzas({ torneoId, configTorneo, onChanged }) {
       ]);
       setFinanzas(data);
       setFormInscripcion({
-        valor: data.inscripcionValor || '',
-        metodo: data.inscripcionMetodo || 'NEQUI',
-        detalle: data.inscripcionDetalle || '',
+        monto: data.monto ?? '',
+        bancoDestino: data.bancoDestino || '',
+        cuentaDestino: data.cuentaDestino || '',
+        titularCuenta: data.titularCuenta || '',
       });
       setFormMultas({
         montoAmarilla: data.multas?.montoAmarilla ?? '',
@@ -1017,9 +1018,10 @@ function ConfiguracionFinanzas({ torneoId, configTorneo, onChanged }) {
     setError('');
     try {
       await guardarInscripcionConfig(torneoId, {
-        inscripcionValor: Number(formInscripcion.valor),
-        inscripcionMetodo: formInscripcion.metodo,
-        inscripcionDetalle: formInscripcion.detalle
+        monto: Number(formInscripcion.monto),
+        bancoDestino: formInscripcion.bancoDestino,
+        cuentaDestino: formInscripcion.cuentaDestino,
+        titularCuenta: formInscripcion.titularCuenta,
       }, getToken());
       setFeedback('Configuración de inscripción guardada.');
     } catch (err) {
@@ -1149,11 +1151,12 @@ function ConfiguracionFinanzas({ torneoId, configTorneo, onChanged }) {
         <div className="fn-grid">
           <label className="fn-card">
             <span className="fn-card-label">Valor (COP)</span>
-            <input className="fn-card-input" type="number" value={formInscripcion.valor} onChange={e => setFormInscripcion({ ...formInscripcion, valor: e.target.value })} disabled={!isBorrador} />
+            <input className="fn-card-input" type="number" value={formInscripcion.monto} onChange={e => setFormInscripcion({ ...formInscripcion, monto: e.target.value })} disabled={!isBorrador} />
           </label>
           <label className="fn-card">
-            <span className="fn-card-label">Método</span>
-            <select className="fn-card-input" value={formInscripcion.metodo} onChange={e => setFormInscripcion({ ...formInscripcion, metodo: e.target.value })} disabled={!isBorrador}>
+            <span className="fn-card-label">Banco / Servicio</span>
+            <select className="fn-card-input" value={formInscripcion.bancoDestino} onChange={e => setFormInscripcion({ ...formInscripcion, bancoDestino: e.target.value })} disabled={!isBorrador}>
+              <option value="">— Seleccionar —</option>
               <option value="NEQUI">Nequi</option>
               <option value="DAVIPLATA">Daviplata</option>
               <option value="BANCOLOMBIA">Bancolombia</option>
@@ -1161,8 +1164,12 @@ function ConfiguracionFinanzas({ torneoId, configTorneo, onChanged }) {
             </select>
           </label>
           <label className="fn-card">
-            <span className="fn-card-label">Detalle (Número/Cuenta)</span>
-            <input className="fn-card-input" type="text" value={formInscripcion.detalle} onChange={e => setFormInscripcion({ ...formInscripcion, detalle: e.target.value })} disabled={!isBorrador} />
+            <span className="fn-card-label">Número de cuenta</span>
+            <input className="fn-card-input" type="text" value={formInscripcion.cuentaDestino} onChange={e => setFormInscripcion({ ...formInscripcion, cuentaDestino: e.target.value })} disabled={!isBorrador} />
+          </label>
+          <label className="fn-card">
+            <span className="fn-card-label">Titular de la cuenta</span>
+            <input className="fn-card-input" type="text" value={formInscripcion.titularCuenta} onChange={e => setFormInscripcion({ ...formInscripcion, titularCuenta: e.target.value })} disabled={!isBorrador} />
           </label>
         </div>
         <div className="fn-actions">
