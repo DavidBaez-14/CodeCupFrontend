@@ -20,10 +20,10 @@ function PagosTab({ toast }) {
   const [inscripciones, setInscripciones] = useState([]);
   const [comprobantes, setComprobantes] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [files, setFiles] = useState({});
+  const [uploadingId, setUploadingId] = useState(null);
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState('');
-  const [file, setFile] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -44,23 +44,18 @@ function PagosTab({ toast }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const pendiente = inscripciones.find((i) => i.estadoInscripcion === 'PENDIENTE_PAGO');
-  const comprobanteExistente = pendiente
-    ? comprobantes.find((c) => c.referenciaId === pendiente.id)
-    : null;
-  const canUpload = pendiente && (!comprobanteExistente || comprobanteExistente.estado === 'RECHAZADO');
+  const pendientes = inscripciones.filter((i) => i.estadoInscripcion === 'PENDIENTE_PAGO');
 
-  const handleSubmitPayment = async (e) => {
-    e.preventDefault();
+  const handleSubmitPayment = async (inscripcionId) => {
+    const file = files[inscripcionId];
     if (!file) { setError('Selecciona un archivo de comprobante.'); return; }
-    if (!pendiente) { setError('No tienes una inscripción pendiente de pago.'); return; }
 
-    setUploading(true);
+    setUploadingId(inscripcionId);
     setError('');
     setFeedback('');
     try {
       const { uploadUrl, fileKey } = await solicitarUploadUrl(
-        { equipoTorneoId: pendiente.id },
+        { equipoTorneoId: inscripcionId },
         getToken(),
       );
 
@@ -72,18 +67,18 @@ function PagosTab({ toast }) {
       if (!uploadRes.ok) throw new Error('Error al subir el archivo.');
 
       await subirComprobante(
-        { tipo: 'INSCRIPCION', referenciaId: pendiente.id, urlArchivo: fileKey },
+        { tipo: 'INSCRIPCION', referenciaId: inscripcionId, urlArchivo: fileKey },
         getToken(),
       );
 
-      setFile(null);
+      setFiles((prev) => ({ ...prev, [inscripcionId]: null }));
       setFeedback('Comprobante enviado. El administrador lo revisará pronto.');
       toast?.('Comprobante enviado para revisión');
       await load();
     } catch (err) {
       setError(err?.message || 'Error al enviar el comprobante.');
     } finally {
-      setUploading(false);
+      setUploadingId(null);
     }
   };
 
@@ -98,74 +93,86 @@ function PagosTab({ toast }) {
         <p className="empty-state">Aún no tienes inscripciones. Inscríbete a un torneo en la pestaña Torneos.</p>
       ) : (
         <>
-          {pendiente && (
-            <div className="dg-payment-status-card pending">
-              <div className="dg-payment-status-row">
-                <div className="dg-payment-status-icon">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="dg-payment-status-label">Estado actual</div>
-                  <div className="dg-payment-status-title">Pendiente de pago</div>
-                </div>
-              </div>
-              {pendiente.montoInscripcion != null && (
-                <div className="dg-payment-status-amount">
-                  $<em>{Number(pendiente.montoInscripcion).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</em>
-                </div>
-              )}
-              <div className="dg-payment-status-detail">
-                Inscripción {pendiente.torneoNombre} · {pendiente.fechaInscripcion?.slice(0, 10)}
-              </div>
-            </div>
-          )}
+          {pendientes.map((insc) => {
+            const comp = comprobantes.find((c) => c.referenciaId === insc.id);
+            const canUpload = !comp || comp.estado === 'RECHAZADO';
+            const isUploading = uploadingId === insc.id;
+            const selectedFile = files[insc.id] ?? null;
 
-          {comprobanteExistente && comprobanteExistente.estado === 'PENDIENTE_REVISION' && (
-            <p className="banner banner-success" style={{ margin: '1rem 0' }}>
-              Tu comprobante está <strong>en revisión</strong>. El administrador lo revisará pronto.
-            </p>
-          )}
-
-          {comprobanteExistente && comprobanteExistente.estado === 'RECHAZADO' && (
-            <p className="banner banner-error" style={{ margin: '1rem 0' }}>
-              Comprobante rechazado.
-              {comprobanteExistente.motivoRechazo && <> Motivo: {comprobanteExistente.motivoRechazo}.</>}
-              {' '}Sube uno nuevo.
-            </p>
-          )}
-
-          {canUpload && (
-            <>
-              <div className="dg-section-label">Cargar comprobante</div>
-              <form className="dg-payment-form" onSubmit={handleSubmitPayment}>
-                <label className="dg-file-drop">
-                  <div className="dg-file-drop-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="17 8 12 3 7 8" />
-                      <line x1="12" y1="3" x2="12" y2="15" />
-                    </svg>
+            return (
+              <div key={insc.id}>
+                <div className="dg-payment-status-card pending">
+                  <div className="dg-payment-status-row">
+                    <div className="dg-payment-status-icon">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="dg-payment-status-label">Estado actual</div>
+                      <div className="dg-payment-status-title">Pendiente de pago</div>
+                    </div>
                   </div>
-                  <div className="dg-file-drop-label">
-                    {file ? file.name : 'Arrastra el archivo o haz clic'}
+                  {insc.montoInscripcion != null && (
+                    <div className="dg-payment-status-amount">
+                      $<em>{Number(insc.montoInscripcion).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</em>
+                    </div>
+                  )}
+                  <div className="dg-payment-status-detail">
+                    Inscripción {insc.torneoNombre} · {insc.fechaInscripcion?.slice(0, 10)}
                   </div>
-                  <div className="dg-file-drop-sub">PDF, JPG o PNG · Máx 5MB</div>
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    style={{ display: 'none' }}
-                    onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  />
-                </label>
-                <button type="submit" className="dg-form-submit" disabled={uploading || !file}>
-                  {uploading ? 'Enviando…' : 'Enviar pago para revisión'}
-                </button>
-              </form>
-            </>
-          )}
+                </div>
+
+                {comp?.estado === 'PENDIENTE_REVISION' && (
+                  <p className="banner banner-success" style={{ margin: '1rem 0' }}>
+                    Tu comprobante está <strong>en revisión</strong>. El administrador lo revisará pronto.
+                  </p>
+                )}
+
+                {comp?.estado === 'RECHAZADO' && (
+                  <p className="banner banner-error" style={{ margin: '1rem 0' }}>
+                    Comprobante rechazado.
+                    {comp.motivoRechazo && <> Motivo: {comp.motivoRechazo}.</>}
+                    {' '}Sube uno nuevo.
+                  </p>
+                )}
+
+                {canUpload && (
+                  <>
+                    <div className="dg-section-label">Cargar comprobante</div>
+                    <form
+                      className="dg-payment-form"
+                      onSubmit={(e) => { e.preventDefault(); handleSubmitPayment(insc.id); }}
+                    >
+                      <label className="dg-file-drop">
+                        <div className="dg-file-drop-icon">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                          </svg>
+                        </div>
+                        <div className="dg-file-drop-label">
+                          {selectedFile ? selectedFile.name : 'Arrastra el archivo o haz clic'}
+                        </div>
+                        <div className="dg-file-drop-sub">PDF, JPG o PNG · Máx 5MB</div>
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          style={{ display: 'none' }}
+                          onChange={(e) => setFiles((prev) => ({ ...prev, [insc.id]: e.target.files?.[0] || null }))}
+                        />
+                      </label>
+                      <button type="submit" className="dg-form-submit" disabled={isUploading || !selectedFile}>
+                        {isUploading ? 'Enviando…' : 'Enviar pago para revisión'}
+                      </button>
+                    </form>
+                  </>
+                )}
+              </div>
+            );
+          })}
 
           <div className="dg-section-label">Historial de pagos</div>
           <div className="dg-payment-history">
