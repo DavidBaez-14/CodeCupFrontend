@@ -120,6 +120,7 @@
 .usuarios-table td {
   padding: 12px 16px;
   vertical-align: middle;
+  border-bottom: none;
 }
 .usuarios-table td.col-name {
   font-family: var(--font-display); font-size: 14px; font-weight: 700;

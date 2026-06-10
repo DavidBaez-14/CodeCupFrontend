@@ -12,7 +12,9 @@ import {
   listMiembrosEquipoTorneoAdmin,
   quitarJugadorCancha,
   reabrirPartido,
+  cerrarSinPagoArbitraje as apiCerrarSinPagoArbitraje,
 } from '../api/supercopa';
+import { getBloqueadosPartido, registrarPagoTodas, habilitarExcepcion as apiHabilitarExcepcion } from '../api/finanzas';
 import { getToken } from '../utils/session';
 
 const STATUS_MAP = {
@@ -52,6 +54,7 @@ export default function useGestionPartido(partidoBase) {
   const [alineacion, setAlineacion] = useState([]);
   const [roster, setRoster] = useState({ home: [], away: [] });
   const [events, setEvents] = useState([]);
+  const [bloqueados, setBloqueados] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -88,14 +91,16 @@ export default function useGestionPartido(partidoBase) {
     setLoading(true);
     setError('');
     try {
-      const [ali, ev, rost] = await Promise.all([
+      const [ali, ev, rost, blq] = await Promise.all([
         listAlineacionPartido(partidoId, getToken()).catch(() => []),
         listEventosPartido(partidoId, getToken()).catch(() => []),
         loadRoster(partidoBase?.localEquipoTorneoId, partidoBase?.visitanteEquipoTorneoId),
+        getBloqueadosPartido(partidoId, getToken()).catch(() => []),
       ]);
       setAlineacion(Array.isArray(ali) ? ali : []);
       setEvents(Array.isArray(ev) ? ev : []);
       setRoster(rost);
+      setBloqueados(Array.isArray(blq) ? blq : []);
     } catch (err) {
       setError(err?.message || 'No fue posible cargar el partido.');
     } finally {
@@ -118,12 +123,15 @@ export default function useGestionPartido(partidoBase) {
     const homeIdx = buildIdx(roster.home);
     const awayIdx = buildIdx(roster.away);
 
-    const buildRosterUI = (arr, idxMap) => arr.map((mb) => ({
-      num: idxMap.get(mb.cedula),
-      cedula: mb.cedula,
-      name: mb.nombre || mb.cedula,
-      suspension: null,
-    }));
+    const buildRosterUI = (arr, idxMap) => arr.map((mb) => {
+      const b = bloqueados.find(x => x.cedula === mb.cedula);
+      return {
+        num: idxMap.get(mb.cedula),
+        cedula: mb.cedula,
+        name: mb.nombre || mb.cedula,
+        suspension: b ? b : null,
+      };
+    });
 
     const homeRoster = buildRosterUI(roster.home, homeIdx);
     const awayRoster = buildRosterUI(roster.away, awayIdx);
@@ -180,8 +188,9 @@ export default function useGestionPartido(partidoBase) {
       onFieldHome,
       onFieldAway,
       events: sortedEvents,
+      torneoId: partido.torneoId,
     };
-  }, [partido, alineacion, events, roster]);
+  }, [partido, alineacion, events, roster, bloqueados]);
 
   // ── Acciones
   const refreshAlineacion = useCallback(async () => {
@@ -228,6 +237,11 @@ export default function useGestionPartido(partidoBase) {
     if (!match) return;
     const equipoTorneoId = side === 'home' ? match.localEquipoTorneoId : match.visitanteEquipoTorneoId;
     try {
+      const rosterFiltrado = match[side === 'home' ? 'homeRoster' : 'awayRoster']
+        .filter(p => !p.suspension); // No agrega bloqueados
+      
+      // La API asume addAll por equipoTorneoId, pero el backend validará elegibilidad
+      // Si el backend lanza error, lo atrapamos.
       await agregarTodosJugadores(partidoId, equipoTorneoId, getToken());
       await refreshAlineacion();
     } catch (err) {
@@ -306,6 +320,43 @@ export default function useGestionPartido(partidoBase) {
     }
   }, [partidoId]);
 
+  const cerrarSinPagoArbitraje = useCallback(async (winnerSide, motivo) => {
+    if (!partidoId || !match) return null;
+    const equipoNoPagoTorneoId = winnerSide === 'home'
+      ? match.visitanteEquipoTorneoId // Si gana home, el que NO pagó fue away
+      : winnerSide === 'away' ? match.localEquipoTorneoId : null; // Si es 'ambos', mandamos null u otro flag
+
+    try {
+      const updated = await apiCerrarSinPagoArbitraje(partidoId, { equipoNoPagoTorneoId, motivo }, getToken());
+      if (updated) setPartido(updated);
+      await loadAll();
+      return updated;
+    } catch (err) {
+      setError(err?.message || 'No fue posible cerrar sin pago de arbitraje.');
+      throw err;
+    }
+  }, [partidoId, match, loadAll]);
+
+  const registrarPago = useCallback(async (cedula, body) => {
+    try {
+      await registrarPagoTodas(cedula, body, getToken());
+      await loadAll();
+    } catch (err) {
+      setError(err?.message || 'Error registrando pago.');
+      throw err;
+    }
+  }, [loadAll]);
+
+  const habilitarExcepcion = useCallback(async (multaId, body) => {
+    try {
+      await apiHabilitarExcepcion(multaId, body, getToken());
+      await loadAll();
+    } catch (err) {
+      setError(err?.message || 'Error habilitando excepción.');
+      throw err;
+    }
+  }, [loadAll]);
+
   const reopen = useCallback(async () => {
     if (!partidoId) return null;
     try {
@@ -332,5 +383,8 @@ export default function useGestionPartido(partidoBase) {
     declarWO,
     cancelMatch,
     reopen,
+    cerrarSinPagoArbitraje,
+    registrarPago,
+    habilitarExcepcion,
   };
 }

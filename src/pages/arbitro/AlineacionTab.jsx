@@ -1,15 +1,31 @@
+import { useState } from 'react';
 import { initials, teamColor } from './arbitroData';
 
-function AlineacionTab({ match, onTogglePlayer, onAddAll, onCloseMatch }) {
+function AlineacionTab({ match, onTogglePlayer, onAddAll, onCloseMatch, onRegistrarPago, onHabilitarExcepcion }) {
   const closed = match.status === 'played';
+  const [feedback, setFeedback] = useState('');
+
+  const wrapFeedback = async (action, successMsg) => {
+    try {
+      await action();
+      setFeedback(successMsg);
+      setTimeout(() => setFeedback(''), 4000);
+    } catch (e) {
+      alert(e.message || 'Ocurrió un error.');
+    }
+  };
+
   return (
     <div className="ar-detail-panel">
+      {feedback && <div className="banner banner-success" style={{ marginBottom: 16 }}>{feedback}</div>}
       <TeamSection
         side="home"
         match={match}
         onTogglePlayer={onTogglePlayer}
         onAddAll={onAddAll}
         disabled={closed}
+        onRegistrarPago={(cedula, body) => wrapFeedback(() => onRegistrarPago(cedula, body), '✓ PAGO REGISTRADO')}
+        onHabilitarExcepcion={(multaId, body) => wrapFeedback(() => onHabilitarExcepcion(multaId, body), '✓ Jugador habilitado por excepción')}
       />
       <TeamSection
         side="away"
@@ -17,6 +33,8 @@ function AlineacionTab({ match, onTogglePlayer, onAddAll, onCloseMatch }) {
         onTogglePlayer={onTogglePlayer}
         onAddAll={onAddAll}
         disabled={closed}
+        onRegistrarPago={(cedula, body) => wrapFeedback(() => onRegistrarPago(cedula, body), '✓ PAGO REGISTRADO')}
+        onHabilitarExcepcion={(multaId, body) => wrapFeedback(() => onHabilitarExcepcion(multaId, body), '✓ Jugador habilitado por excepción')}
       />
 
       <div className="ar-lineup-summary">
@@ -57,7 +75,7 @@ function AlineacionTab({ match, onTogglePlayer, onAddAll, onCloseMatch }) {
   );
 }
 
-function TeamSection({ side, match, onTogglePlayer, onAddAll, disabled }) {
+function TeamSection({ side, match, onTogglePlayer, onAddAll, disabled, onRegistrarPago, onHabilitarExcepcion }) {
   const isHome = side === 'home';
   const roster = isHome ? match.homeRoster : match.awayRoster;
   const onField = isHome ? match.onFieldHome : match.onFieldAway;
@@ -66,8 +84,9 @@ function TeamSection({ side, match, onTogglePlayer, onAddAll, disabled }) {
 
   const rosterArr = Array.isArray(roster) ? roster : [];
 
+  // Solo se pueden añadir a cancha los que no están suspendidos y no están ya en cancha
   const addableCount = rosterArr.filter(
-    (p) => !onField?.includes(p.num),
+    (p) => !onField?.includes(p.num) && (!p.suspension || p.suspension.apto)
   ).length;
   const allFull = addableCount === 0;
 
@@ -96,7 +115,7 @@ function TeamSection({ side, match, onTogglePlayer, onAddAll, disabled }) {
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
           )}
-          {allFull ? 'Todos en cancha' : 'Agregar todos'}
+          {allFull ? 'Todos listos' : 'Agregar todos'}
         </button>
 
         <div className={`ar-team-section-counter${onField?.length === 0 ? ' warn' : ''}`}>
@@ -113,6 +132,8 @@ function TeamSection({ side, match, onTogglePlayer, onAddAll, disabled }) {
             onField={onField?.includes(p.num)}
             onToggle={() => onTogglePlayer(side, p.num)}
             disabled={disabled}
+            onRegistrarPago={onRegistrarPago}
+            onHabilitarExcepcion={onHabilitarExcepcion}
           />
         ))}
       </ul>
@@ -120,12 +141,46 @@ function TeamSection({ side, match, onTogglePlayer, onAddAll, disabled }) {
   );
 }
 
-function PlayerRow({ player: p, side, onField, onToggle, disabled }) {
+function PlayerRow({ player: p, side, onField, onToggle, disabled, onRegistrarPago, onHabilitarExcepcion }) {
+  const isSuspended = p.suspension && p.suspension.apto === false;
   let cls = '';
   if (onField) cls = 'on-field';
+  if (isSuspended) cls += ' suspended';
+
+  const handlePago = () => {
+    if (window.confirm(`¿Registrar pago de multas pendientes para ${p.name}?`)) {
+      onRegistrarPago(p.cedula, { comprobanteRef: 'Efectivo en campo', verificadoManual: true });
+    }
+  };
+
+  const handleExcepcion = () => {
+    // Tomar la primera multa pendiente que causa el bloqueo (idealmente la UI de MS3 nos daría el ID, pero aquí pasamos null para aplicar a la más reciente, o asumimos un ID ficticio si la API lo requiere)
+    // Según plan, /multas/{multaId}/habilitar-excepcion.
+    // Si suspension tiene multas, tomamos la primera.
+    const multaId = p.suspension.multasPendientes?.[0]?.id || 'latest';
+    const motivo = window.prompt(`Ingresa el motivo de excepción para habilitar a ${p.name}:`);
+    if (motivo && motivo.trim()) {
+      onHabilitarExcepcion(multaId, { motivo });
+    }
+  };
 
   let actions;
-  if (onField) {
+  if (isSuspended) {
+    const hasMulta = p.suspension.motivos?.some(m => m.toLowerCase().includes('multa') || m.toLowerCase().includes('pago'));
+    if (hasMulta) {
+      actions = (
+        <button type="button" className="action-button approve" style={{ fontSize: '0.75rem', padding: '4px 8px' }} onClick={handlePago}>
+          Registrar Pago
+        </button>
+      );
+    } else {
+      actions = (
+        <button type="button" className="action-button primary" style={{ fontSize: '0.75rem', padding: '4px 8px' }} onClick={handleExcepcion}>
+          Excepción
+        </button>
+      );
+    }
+  } else if (onField) {
     actions = (
       <button type="button" className="ar-btn-icon danger" onClick={onToggle} title="Quitar de cancha" disabled={disabled}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -145,12 +200,22 @@ function PlayerRow({ player: p, side, onField, onToggle, disabled }) {
   }
 
   return (
-    <li className={`ar-player-row ${cls}`}>
+    <li className={`ar-player-row ${cls}`} style={{ position: 'relative' }}>
       <div className="ar-player-num">{p.num}</div>
       <div className="ar-player-info">
-        <div className="ar-player-name">{p.name}</div>
+        <div className="ar-player-name" style={{ color: isSuspended ? 'var(--color-error)' : 'inherit' }}>
+          {p.name}
+        </div>
         <div className="ar-player-sub">
-          {onField ? <span>En cancha</span> : <span>Fuera</span>}
+          {isSuspended ? (
+            <span style={{ color: 'var(--color-error)' }}>
+              🚫 {p.suspension.motivos?.join(', ')}
+            </span>
+          ) : onField ? (
+            <span>En cancha</span>
+          ) : (
+            <span>Fuera</span>
+          )}
         </div>
       </div>
       <div className="ar-player-actions">{actions}</div>

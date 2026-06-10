@@ -364,11 +364,14 @@
 }
 .ds-table tbody td {
   padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: none;
   color: var(--color-fg);
   vertical-align: middle;
 }
-.ds-table tbody tr:last-child td { border-bottom: 0; }
+.ds-table tbody tr {
+  border-bottom: 1px solid var(--color-border);
+}
+.ds-table tbody tr:last-child { border-bottom: none; }
 .ds-table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
 
 .ds-table .mono { font-family: var(--font-mono); color: var(--color-fg-muted); font-size: var(--text-sm); }

@@ -409,3 +409,90 @@ export function reabrirPartido(partidoId, token) {
     headers: authHeader(token),
   });
 }
+
+// ─────────────────────────────────────────────────────────
+//  ADMIN — Finanzas y Configuración MS2
+// ─────────────────────────────────────────────────────────
+
+export function getFinanzasConfig(torneoId, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/torneos/${torneoId}/finanzas-config`), {
+    method: 'GET',
+    headers: authHeader(token),
+  });
+}
+
+export function guardarInscripcionConfig(torneoId, payload, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/torneos/${torneoId}/inscripcion-config`), {
+    method: 'PUT',
+    headers: authHeader(token, true),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function guardarMultaConfig(torneoId, payload, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/torneos/${torneoId}/multa-config`), {
+    method: 'PUT',
+    headers: authHeader(token, true),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getPremiosTorneo(torneoId, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/torneos/${torneoId}/premios`), {
+    method: 'GET',
+    headers: authHeader(token),
+  });
+}
+
+export function crearPremio(torneoId, payload, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/torneos/${torneoId}/premios`), {
+    method: 'POST',
+    headers: authHeader(token, true),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function actualizarPremio(torneoId, premioId, payload, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/torneos/${torneoId}/premios/${premioId}`), {
+    method: 'PUT',
+    headers: authHeader(token, true),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function eliminarPremio(torneoId, premioId, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/torneos/${torneoId}/premios/${premioId}`), {
+    method: 'DELETE',
+    headers: authHeader(token),
+  });
+}
+
+export function asignarPremio(torneoId, premioId, payload, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/torneos/${torneoId}/premios/${premioId}/asignar`), {
+    method: 'POST',
+    headers: authHeader(token, true),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function quitarAsignacionPremio(torneoId, premioId, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/torneos/${torneoId}/premios/${premioId}/asignar`), {
+    method: 'DELETE',
+    headers: authHeader(token),
+  });
+}
+
+export function cerrarTorneo(torneoId, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/torneos/${torneoId}/cerrar`), {
+    method: 'POST',
+    headers: authHeader(token),
+  });
+}
+
+export function cerrarSinPagoArbitraje(partidoId, payload, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/partidos/${partidoId}/cerrar-sin-pago-arbitraje`), {
+    method: 'POST',
+    headers: authHeader(token, true),
+    body: JSON.stringify(payload),
+  });
+}

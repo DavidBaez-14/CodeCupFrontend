@@ -44,6 +44,13 @@ function GestionPartidoModal({ partido, onClose, onPartidoActualizado, mode = 'a
     } catch { /* */ }
   };
 
+  const handleCerrarSinPago = async (winnerSide, motivo) => {
+    try {
+      const updated = await gestion.cerrarSinPagoArbitraje(winnerSide, motivo);
+      if (updated && onPartidoActualizado) onPartidoActualizado(updated);
+    } catch { /* */ }
+  };
+
   const handleReopen = async () => {
     if (!window.confirm(
       'Reabrir este partido permite editar eventos y declarar W.O. ¿Continuar?',
@@ -98,6 +105,9 @@ function GestionPartidoModal({ partido, onClose, onPartidoActualizado, mode = 'a
               onWO={handleWO}
               onCancel={handleCancel}
               onReopen={mode === 'admin' ? handleReopen : undefined}
+              onCerrarSinPagoArbitraje={handleCerrarSinPago}
+              onRegistrarPago={gestion.registrarPago}
+              onHabilitarExcepcion={gestion.habilitarExcepcion}
             />
           </div>
         )}

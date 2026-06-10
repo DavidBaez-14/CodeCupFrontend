@@ -8,9 +8,22 @@ import {
   guardarConfiguracionTorneo,
   generarFixture,
   borrarFixture,
+  getFinanzasConfig,
+  guardarInscripcionConfig,
+  guardarMultaConfig,
+  getPremiosTorneo,
+  crearPremio,
+  actualizarPremio,
+  eliminarPremio,
+  cerrarTorneo,
+  asignarPremio,
+  quitarAsignacionPremio,
+  listInscripcionesTorneo,
+  listMiembrosEquipoTorneoAdmin,
 } from '../../api/supercopa';
 import { getToken } from '../../utils/session';
 import '../../styles/admin-torneo-formato.css';
+import '../../styles/finanzas.css';
 
 const ESTADO_LABEL = {
   BORRADOR: 'Borrador',
@@ -310,11 +323,19 @@ function ConfigurarTorneoView() {
       </article>
 
       {selectedId && (
-        <ConfiguracionFormato
-          key={selectedId}
-          torneoId={selectedId}
-          onChanged={() => loadTorneos(true)}
-        />
+        <>
+          <ConfiguracionFormato
+            key={`fmt-${selectedId}`}
+            torneoId={selectedId}
+            onChanged={() => loadTorneos(true)}
+          />
+          <ConfiguracionFinanzas
+            key={`fin-${selectedId}`}
+            torneoId={selectedId}
+            configTorneo={torneos.find((t) => t.id === selectedId)}
+            onChanged={() => loadTorneos(true)}
+          />
+        </>
       )}
     </div>
   );
@@ -926,6 +947,361 @@ function PreviewFlow({ draft, equiposPorGrupo }) {
         </span>
       )}
     </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  Sub-componente: Configuración de Finanzas (Inscripción, Multas, Premios)
+// ─────────────────────────────────────────────────────────────────
+
+function ConfiguracionFinanzas({ torneoId, configTorneo, onChanged }) {
+  const [finanzas, setFinanzas] = useState(null);
+  const [premios, setPremios] = useState([]);
+  const [jugadores, setJugadores] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [feedback, setFeedback] = useState('');
+  const [error, setError] = useState('');
+
+  const [formInscripcion, setFormInscripcion] = useState({ valor: '', metodo: '', detalle: '' });
+  const [formMultas, setFormMultas] = useState({
+    montoAmarilla: '', montoAzul: '', montoRoja: '', fechasSuspensionRoja: 1
+  });
+  const [formPremio, setFormPremio] = useState({ tipo: 'CAMPEON', descripcion: '', monto: '' });
+  const [assigning, setAssigning] = useState(null); // { premioId } while assigning
+
+  const loadFinanzas = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [data, dataPremios] = await Promise.all([
+        getFinanzasConfig(torneoId, getToken()),
+        getPremiosTorneo(torneoId, getToken()),
+      ]);
+      setFinanzas(data);
+      setFormInscripcion({
+        valor: data.inscripcionValor || '',
+        metodo: data.inscripcionMetodo || 'NEQUI',
+        detalle: data.inscripcionDetalle || '',
+      });
+      setFormMultas({
+        montoAmarilla: data.multas?.montoAmarilla ?? '',
+        montoAzul: data.multas?.montoAzul ?? '',
+        montoRoja: data.multas?.montoRoja ?? '',
+        fechasSuspensionRoja: data.multas?.fechasSuspensionRoja ?? 1,
+      });
+      setPremios(Array.isArray(dataPremios) ? dataPremios : []);
+
+      if (configTorneo?.estado === 'FINALIZADO') {
+        const inscripciones = await listInscripcionesTorneo(torneoId, getToken());
+        const equipos = Array.isArray(inscripciones) ? inscripciones : [];
+        const members = await Promise.all(
+          equipos.map(eq =>
+            listMiembrosEquipoTorneoAdmin(eq.id, getToken()).catch(() => [])
+          )
+        );
+        setJugadores(members.flat().filter(Boolean));
+      }
+    } catch (err) {
+      setError(err?.message || 'Error cargando finanzas.');
+    } finally {
+      setLoading(false);
+    }
+  }, [torneoId, configTorneo?.estado]);
+
+  useEffect(() => { loadFinanzas(); }, [loadFinanzas]);
+
+  const handleSaveInscripcion = async () => {
+    setSavingConfig(true);
+    setFeedback('');
+    setError('');
+    try {
+      await guardarInscripcionConfig(torneoId, {
+        inscripcionValor: Number(formInscripcion.valor),
+        inscripcionMetodo: formInscripcion.metodo,
+        inscripcionDetalle: formInscripcion.detalle
+      }, getToken());
+      setFeedback('Configuración de inscripción guardada.');
+    } catch (err) {
+      setError(err?.message || 'Error guardando inscripción.');
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
+  const handleSaveMultas = async () => {
+    setSavingConfig(true);
+    setFeedback('');
+    setError('');
+    try {
+      await guardarMultaConfig(torneoId, {
+        montoAmarilla: Number(formMultas.montoAmarilla),
+        montoAzul: Number(formMultas.montoAzul),
+        montoRoja: Number(formMultas.montoRoja),
+        fechasSuspensionRoja: Number(formMultas.fechasSuspensionRoja) || 1,
+      }, getToken());
+      setFeedback('Configuración de multas guardada.');
+    } catch (err) {
+      setError(err?.message || 'Error guardando multas.');
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
+  const handleCrearPremio = async (e) => {
+    e.preventDefault();
+    setFeedback('');
+    setError('');
+    try {
+      const existing = premios.find(p => p.codigoCatalogo === formPremio.tipo);
+      if (existing) {
+        await actualizarPremio(torneoId, existing.id, {
+          titulo: formPremio.tipo === 'OTRO' ? formPremio.descripcion : null,
+          descripcion: null,
+          monto: Number(formPremio.monto)
+        }, getToken());
+        setFeedback('Premio actualizado.');
+      } else {
+        await crearPremio(torneoId, {
+          codigoCatalogo: formPremio.tipo,
+          titulo: formPremio.tipo === 'OTRO' ? formPremio.descripcion : null,
+          descripcion: null,
+          monto: Number(formPremio.monto)
+        }, getToken());
+        setFeedback('Premio creado.');
+      }
+      setFormPremio({ tipo: 'CAMPEON', descripcion: '', monto: '' });
+      await loadFinanzas();
+    } catch (err) {
+      setError(err?.message || 'Error guardando premio.');
+    }
+  };
+
+  const handleEliminarPremio = async (id) => {
+    if (!confirm('¿Eliminar este premio?')) return;
+    try {
+      await eliminarPremio(torneoId, id, getToken());
+      setFeedback('Premio eliminado.');
+      await loadFinanzas();
+    } catch (err) {
+      setError(err?.message || 'Error eliminando premio.');
+    }
+  };
+
+  const handleAsignarPremio = async (premioId, cedula) => {
+    if (!cedula) return;
+    setAssigning(premioId);
+    setFeedback('');
+    setError('');
+    try {
+      await asignarPremio(torneoId, premioId, { cedula }, getToken());
+      setFeedback('Premio asignado exitosamente.');
+      await loadFinanzas();
+    } catch (err) {
+      setError(err?.message || 'Error asignando premio.');
+    } finally {
+      setAssigning(null);
+    }
+  };
+
+  const handleQuitarAsignacion = async (premioId) => {
+    if (!confirm('¿Quitar la asignación de este premio?')) return;
+    setFeedback('');
+    setError('');
+    try {
+      await quitarAsignacionPremio(torneoId, premioId, getToken());
+      setFeedback('Asignación removida.');
+      await loadFinanzas();
+    } catch (err) {
+      setError(err?.message || 'Error quitando asignación.');
+    }
+  };
+
+  const handleCerrarTorneo = async () => {
+    if (!confirm('¿Estás seguro de cerrar el torneo? Se asignarán los premios automáticos y no se podrán revertir los resultados.')) return;
+    try {
+      await cerrarTorneo(torneoId, getToken());
+      setFeedback('Torneo cerrado exitosamente.');
+      if (onChanged) onChanged();
+    } catch (err) {
+      setError(err?.message || 'Error cerrando el torneo.');
+    }
+  };
+
+  if (loading || !finanzas) {
+    return <div className="empty-state">Cargando finanzas...</div>;
+  }
+
+  const isBorrador = configTorneo?.estado === 'BORRADOR';
+  const isFinalizado = configTorneo?.estado === 'FINALIZADO';
+
+  return (
+    <div className="ds-panel">
+      <header className="panel-header">
+        <h2>Finanzas y Premios</h2>
+        <p>Configura los valores de inscripción, tabla de multas y la bolsa de premios del torneo.</p>
+      </header>
+
+      {/* INSCRIPCION */}
+      <section className="fn-section">
+        <h3 className="fn-section-title">Inscripción</h3>
+        <p className="fn-section-desc">Define el costo y el método de pago para que los equipos puedan inscribirse.</p>
+        <div className="fn-grid">
+          <label className="fn-card">
+            <span className="fn-card-label">Valor (COP)</span>
+            <input className="fn-card-input" type="number" value={formInscripcion.valor} onChange={e => setFormInscripcion({ ...formInscripcion, valor: e.target.value })} disabled={!isBorrador} />
+          </label>
+          <label className="fn-card">
+            <span className="fn-card-label">Método</span>
+            <select className="fn-card-input" value={formInscripcion.metodo} onChange={e => setFormInscripcion({ ...formInscripcion, metodo: e.target.value })} disabled={!isBorrador}>
+              <option value="NEQUI">Nequi</option>
+              <option value="DAVIPLATA">Daviplata</option>
+              <option value="BANCOLOMBIA">Bancolombia</option>
+              <option value="EFECTIVO">Efectivo</option>
+            </select>
+          </label>
+          <label className="fn-card">
+            <span className="fn-card-label">Detalle (Número/Cuenta)</span>
+            <input className="fn-card-input" type="text" value={formInscripcion.detalle} onChange={e => setFormInscripcion({ ...formInscripcion, detalle: e.target.value })} disabled={!isBorrador} />
+          </label>
+        </div>
+        <div className="fn-actions">
+          <button type="button" className="action-button primary" onClick={handleSaveInscripcion} disabled={savingConfig || !isBorrador}>
+            Guardar Inscripción
+          </button>
+        </div>
+      </section>
+
+      {/* MULTAS */}
+      <section className="fn-section">
+        <h3 className="fn-section-title">Multas</h3>
+        <p className="fn-section-desc">Valores que se cobrarán automáticamente por tarjetas o ausencias.</p>
+        <div className="fn-grid">
+          <label className="fn-card">
+            <span className="fn-card-label">Amarilla (COP)</span>
+            <input className="fn-card-input" type="number" value={formMultas.montoAmarilla} onChange={e => setFormMultas({ ...formMultas, montoAmarilla: e.target.value })} />
+          </label>
+          <label className="fn-card">
+            <span className="fn-card-label">Azul (COP)</span>
+            <input className="fn-card-input" type="number" value={formMultas.montoAzul} onChange={e => setFormMultas({ ...formMultas, montoAzul: e.target.value })} />
+          </label>
+          <label className="fn-card">
+            <span className="fn-card-label">Roja (COP)</span>
+            <input className="fn-card-input" type="number" value={formMultas.montoRoja} onChange={e => setFormMultas({ ...formMultas, montoRoja: e.target.value })} />
+          </label>
+          <label className="fn-card">
+            <span className="fn-card-label">Fechas suspensión roja</span>
+            <input className="fn-card-input" type="number" min="1" value={formMultas.fechasSuspensionRoja} onChange={e => setFormMultas({ ...formMultas, fechasSuspensionRoja: e.target.value })} />
+          </label>
+        </div>
+        <div className="fn-actions">
+          <button type="button" className="action-button primary" onClick={handleSaveMultas} disabled={savingConfig}>
+            Guardar Multas
+          </button>
+        </div>
+      </section>
+
+      {/* PREMIOS */}
+      <section className="fn-section">
+        <h3 className="fn-section-title">Premios (Bolsa)</h3>
+        <p className="fn-section-desc">Crea los premios que se repartirán al final del torneo. Campeón, Subcampeón, MVP, etc.</p>
+
+        <form className="fn-grid" onSubmit={handleCrearPremio} style={{ marginBottom: '1.5rem', alignItems: 'flex-end' }}>
+          <label className="fn-card">
+            <span className="fn-card-label">Tipo</span>
+            <select className="fn-card-input" value={formPremio.tipo} onChange={e => setFormPremio({ ...formPremio, tipo: e.target.value })} disabled={isFinalizado}>
+              <option value="CAMPEON">Campeón</option>
+              <option value="SUBCAMPEON">Subcampeón</option>
+              <option value="TERCERO">Tercer puesto</option>
+              <option value="GOLEADOR">Goleador</option>
+              <option value="PORTERO_MENOS_VENCIDO">Portero menos vencido</option>
+              <option value="MVP">MVP</option>
+              <option value="OTRO">Otro...</option>
+            </select>
+          </label>
+          {formPremio.tipo === 'OTRO' && (
+            <label className="fn-card">
+              <span className="fn-card-label">Descripción</span>
+              <input className="fn-card-input" type="text" value={formPremio.descripcion} onChange={e => setFormPremio({ ...formPremio, descripcion: e.target.value })} disabled={isFinalizado} required />
+            </label>
+          )}
+          <label className="fn-card">
+            <span className="fn-card-label">Monto (COP)</span>
+            <input className="fn-card-input" type="number" value={formPremio.monto} onChange={e => setFormPremio({ ...formPremio, monto: e.target.value })} disabled={isFinalizado} required />
+          </label>
+          <button type="submit" className="action-button approve" disabled={isFinalizado}>
+            {premios.find(p => p.codigoCatalogo === formPremio.tipo) ? 'Actualizar monto' : '+ Agregar'}
+          </button>
+        </form>
+
+        <div className="fn-premios-list">
+          {premios.map(p => {
+            const isIndividual = !p.ganadorEquipoNombre;
+            const hasWinner = p.ganadorCedula || p.ganadorEquipoTorneoId;
+            const isManualType = p.codigoCatalogo === 'MVP' || p.codigoCatalogo === 'OTRO';
+            return (
+              <div key={p.id} className="fn-premio-item">
+                <div className="fn-premio-info">
+                  <span className="fn-premio-name">{p.codigoCatalogo === 'OTRO' ? (p.titulo || 'Otro') : p.nombreCatalogo}</span>
+                  <span className="fn-premio-amount">${p.monto.toLocaleString()}</span>
+                  {p.ganadorEquipoNombre && <span className="fn-premio-winner">🏆 {p.ganadorEquipoNombre} {p.ganadorJugadorNombre ? `(${p.ganadorJugadorNombre})` : ''}</span>}
+                  {p.ganadorCedula && !p.ganadorEquipoNombre && (
+                    <span className="fn-premio-winner">🏆 {p.ganadorJugadorNombre || p.ganadorCedula}</span>
+                  )}
+                  {isFinalizado && !hasWinner && isIndividual && isManualType && (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+                      <select
+                        className="fn-card-input"
+                        style={{ flex: 1 }}
+                        defaultValue=""
+                        onChange={(e) => {
+                          if (e.target.value) handleAsignarPremio(p.id, e.target.value);
+                        }}
+                        disabled={assigning === p.id}
+                      >
+                        <option value="">Seleccionar jugador...</option>
+                        {jugadores.map(j => (
+                          <option key={j.cedula} value={j.cedula}>{j.nombre || j.cedula}</option>
+                        ))}
+                      </select>
+                      {assigning === p.id && <span className="muted">Asignando...</span>}
+                    </div>
+                  )}
+                  {isFinalizado && hasWinner && isIndividual && isManualType && (
+                    <button
+                      type="button"
+                      className="action-button ghost"
+                      style={{ fontSize: '0.75rem', marginTop: 8 }}
+                      onClick={() => handleQuitarAsignacion(p.id)}
+                    >
+                      Quitar asignación
+                    </button>
+                  )}
+                </div>
+                {!isFinalizado && (
+                  <button type="button" className="action-button reject" onClick={() => handleEliminarPremio(p.id)}>X</button>
+                )}
+              </div>
+            );
+          })}
+          {premios.length === 0 && <span className="muted">No hay premios configurados.</span>}
+        </div>
+      </section>
+
+      {/* CERRAR TORNEO */}
+      {configTorneo?.estado === 'EN_CURSO' && (
+        <section className="fn-section" style={{ border: '1px solid var(--color-error)' }}>
+          <h3 className="fn-section-title" style={{ color: 'var(--color-error)' }}>Cerrar Torneo</h3>
+          <p className="fn-section-desc">Esta acción finalizará el torneo y asignará automáticamente los premios (Campeón, Goleador, Valla Menos Vencida). No se puede revertir.</p>
+          <button type="button" className="action-button reject" onClick={handleCerrarTorneo}>
+            Finalizar Torneo
+          </button>
+        </section>
+      )}
+
+      {feedback && <p className="banner banner-success">{feedback}</p>}
+      {error && <p className="banner banner-error">{error}</p>}
+    </div>
   );
 }
 

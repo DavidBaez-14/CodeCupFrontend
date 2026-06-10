@@ -7,6 +7,7 @@ import {
   listTorneosAdmin,
   rechazarInscripcion,
 } from '../../api/supercopa';
+import { getComprobantesPendientes, getDownloadUrl } from '../../api/finanzas';
 import { getToken } from '../../utils/session';
 
 const ESTADO_LABEL = {
@@ -26,6 +27,7 @@ function GestionarEquiposView() {
   const [actioningId, setActioningId] = useState(null);
   const [rechazo, setRechazo] = useState({ open: false, eqtId: null, equipoNombre: '', motivo: '' });
   const [expulsion, setExpulsion] = useState({ open: false, eqtId: null, equipoNombre: '', motivo: '' });
+  const [comprobantes, setComprobantes] = useState([]);
 
   useEffect(() => {
     listTorneosAdmin(getToken())
@@ -43,8 +45,12 @@ function GestionarEquiposView() {
     setError('');
     setFeedback('');
     try {
-      const data = await listInscripcionesTorneo(torneoId, getToken());
-      setInscripciones(Array.isArray(data) ? data : []);
+      const [inscData, compData] = await Promise.all([
+        listInscripcionesTorneo(torneoId, getToken()),
+        getComprobantesPendientes(getToken()),
+      ]);
+      setInscripciones(Array.isArray(inscData) ? inscData : []);
+      setComprobantes(Array.isArray(compData) ? compData : []);
     } catch (err) {
       setError(err?.message || 'No fue posible cargar las inscripciones.');
     } finally {
@@ -53,6 +59,16 @@ function GestionarEquiposView() {
   }, [torneoId]);
 
   useEffect(() => { loadInscripciones(); }, [loadInscripciones]);
+
+  const handleVerComprobante = async (comprobanteId) => {
+    try {
+      const res = await getDownloadUrl(comprobanteId, getToken());
+      if (res?.url) window.open(res.url, '_blank');
+      else alert('No se pudo obtener la URL del comprobante.');
+    } catch (e) {
+      alert('Error al abrir el comprobante: ' + e.message);
+    }
+  };
 
   const handleAprobar = async (insc) => {
     setActioningId(insc.id);
@@ -186,8 +202,8 @@ function GestionarEquiposView() {
               <tbody>
                 {inscripciones.map((insc) => (
                   <tr key={insc.id}>
-                    <td>{insc.equipoNombre}</td>
-                    <td className="mono">{insc.delegadoCedula}</td>
+                    <td>{insc.equipoNombre || '—'}</td>
+                    <td className="mono">{insc.delegadoCedula || '—'}</td>
                     <td>
                       <span className={`status-pill estado-${(insc.estadoInscripcion || '').toLowerCase()}`}>
                         {ESTADO_LABEL[insc.estadoInscripcion] || insc.estadoInscripcion}
@@ -207,6 +223,23 @@ function GestionarEquiposView() {
                         : (insc.motivoRechazo || '—')}
                     </td>
                     <td className="actions-cell">
+                      {(() => {
+                        const comp = comprobantes.find((c) => c.referenciaId === insc.id);
+                        return comp ? (
+                          <button
+                            type="button"
+                            className="action-button ghost"
+                            onClick={() => handleVerComprobante(comp.id)}
+                            title="Ver comprobante"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 4 }}>
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                            Ver
+                          </button>
+                        ) : null;
+                      })()}
                       {insc.estadoInscripcion === 'PENDIENTE_PAGO' && (
                         <>
                           <button

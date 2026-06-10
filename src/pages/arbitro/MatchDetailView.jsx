@@ -26,6 +26,9 @@ function MatchDetailView({
   onWO,
   onCancel,
   onReopen,
+  onCerrarSinPagoArbitraje,
+  onRegistrarPago,
+  onHabilitarExcepcion,
 }) {
   const [activeTab, setActiveTab] = useState('alineacion');
 
@@ -120,6 +123,8 @@ function MatchDetailView({
           onTogglePlayer={onTogglePlayer}
           onAddAll={onAddAll}
           onCloseMatch={onCloseMatch}
+          onRegistrarPago={onRegistrarPago}
+          onHabilitarExcepcion={onHabilitarExcepcion}
         />
       )}
       {activeTab === 'eventos' && (
@@ -134,6 +139,7 @@ function MatchDetailView({
           match={match}
           onWO={onWO}
           onCancel={onCancel}
+          onCerrarSinPagoArbitraje={onCerrarSinPagoArbitraje}
         />
       )}
     </div>

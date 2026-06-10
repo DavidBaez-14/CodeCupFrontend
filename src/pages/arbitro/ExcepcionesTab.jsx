@@ -16,11 +16,14 @@ const CANCEL_REASONS = [
   'Otro',
 ];
 
-function ExcepcionesTab({ match, onWO, onCancel }) {
+function ExcepcionesTab({ match, onWO, onCancel, onCerrarSinPagoArbitraje }) {
   const [woWinner,    setWoWinner]    = useState('home');
   const [woReason,    setWoReason]    = useState(WO_REASONS[0]);
   const [cancelReason, setCancelReason] = useState(CANCEL_REASONS[0]);
   const [cancelNotes,  setCancelNotes]  = useState('');
+
+  const [sinPagoSide, setSinPagoSide] = useState('ambos');
+  const [sinPagoMotivo, setSinPagoMotivo] = useState('');
 
   const handleWO = () => {
     const winnerName = woWinner === 'home' ? match.home : match.away;
@@ -35,6 +38,14 @@ function ExcepcionesTab({ match, onWO, onCancel }) {
       `¿Cancelar el partido? Motivo: ${cancelReason}. Será reprogramado por el comité.`,
     )) return;
     onCancel(cancelReason, cancelNotes);
+  };
+
+  const handleSinPago = () => {
+    if (!onCerrarSinPagoArbitraje) return;
+    if (!window.confirm(
+      `¿Cerrar partido por FALTA DE PAGO DE ARBITRAJE?\nEquipo infractor: ${sinPagoSide.toUpperCase()}\n\nEl partido quedará cerrado y sin estadísticas.`
+    )) return;
+    onCerrarSinPagoArbitraje(sinPagoSide, sinPagoMotivo);
   };
 
   const homeIsWinner = woWinner === 'home';
@@ -141,6 +152,60 @@ function ExcepcionesTab({ match, onWO, onCancel }) {
 
         <button type="button" className="ar-btn-submit danger" onClick={handleCancel}>
           Cancelar partido
+        </button>
+      </div>
+
+      <div className="ar-exception-card arbitraje" style={{ marginTop: '1rem', borderLeftColor: 'var(--color-error)' }}>
+        <header className="ar-exception-header">
+          <div className="ar-exception-icon danger" style={{ color: 'var(--color-error)' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+            </svg>
+          </div>
+          <div>
+            <div className="ar-exception-title">Sin pago de arbitraje</div>
+            <div className="ar-exception-sub">
+              Cierra el partido anulando eventos y marcando qué equipo(s) no pagó.
+            </div>
+          </div>
+        </header>
+
+        <div className="ar-form-row">
+          <label className="ar-form-label">¿Quién no pagó el arbitraje?</label>
+          <div className="ar-team-radio-row">
+            {[
+              { side: 'ambos', name: 'Ambos equipos' },
+              { side: 'home', name: match.home },
+              { side: 'away', name: match.away },
+            ].map((opt) => (
+              <button
+                key={opt.side}
+                type="button"
+                className={`ar-team-radio${sinPagoSide === opt.side ? ' active' : ''}`}
+                onClick={() => setSinPagoSide(opt.side)}
+              >
+                <div className="ar-team-radio-dot" />
+                <div>
+                  <div className="ar-team-radio-name">{opt.name}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="ar-form-row">
+          <label className="ar-form-label">Observaciones (opcional)</label>
+          <textarea
+            className="ar-form-textarea"
+            placeholder="Detalles sobre la falta de pago..."
+            value={sinPagoMotivo}
+            onChange={(e) => setSinPagoMotivo(e.target.value)}
+          />
+        </div>
+
+        <button type="button" className="ar-btn-submit danger" onClick={handleSinPago}>
+          CONFIRMAR SIN PAGO
         </button>
       </div>
     </div>

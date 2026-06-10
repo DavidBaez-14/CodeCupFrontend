@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { inscribirEquipo, listTorneosDisponibles } from '../../api/supercopa';
 import { getToken } from '../../utils/session';
+import ballIcon from '../../assets/soccer-ball-sci-fi-192.png';
 
 const ESTADO_INSC = {
   PENDIENTE_PAGO: { label: 'Pendiente de pago', cls: 'pending' },
@@ -133,7 +134,7 @@ function TorneosTab({ tieneEquipo, onInscripcion, toast }) {
           return (
             <div key={t.id} className={`dg-tournament-card inscribed`}>
               <div className="dg-tc-icon">
-                <img src="/soccer-ball-sci-fi-192.png" alt="" />
+                <img src={ballIcon} alt="" />
               </div>
               <div className="dg-tc-info">
                 <div className="dg-tc-title">{t.nombre}</div>
@@ -197,7 +198,7 @@ function TournamentCard({ t, ctx, actioningId, onInscribir }) {
   return (
     <div className={`dg-tournament-card${ctx === 'abierto' && t.isInscribed ? ' inscribed' : ''}`}>
       <div className="dg-tc-icon">
-        <img src="/soccer-ball-sci-fi-192.png" alt="" />
+        <img src={ballIcon} alt="" />
       </div>
       <div className="dg-tc-info">
         <div className="dg-tc-title">{t.nombre}</div>

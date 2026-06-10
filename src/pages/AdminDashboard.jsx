@@ -29,22 +29,6 @@ const SIDEBAR_GROUPS = [
       { id: 'torneo', label: 'Configurar torneo', live: true },
       { id: 'equipos', label: 'Gestionar equipos', live: true },
       { id: 'fixture', label: 'Fixture y cronograma', live: true },
-      { id: 'aplazamientos', label: 'Aplazamientos' },
-    ],
-  },
-  {
-    title: 'Finanzas',
-    items: [
-      { id: 'comprobantes', label: 'Comprobantes pendientes' },
-      { id: 'multas', label: 'Multas activas' },
-    ],
-  },
-  {
-    title: 'Reportes',
-    items: [
-      { id: 'estadisticas', label: 'Estadísticas' },
-      { id: 'reporte', label: 'Reporte PDF' },
-      { id: 'fama', label: 'Salón de la Fama' },
     ],
   },
 ];
