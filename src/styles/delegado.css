@@ -723,6 +723,70 @@
 .dg-form-submit:hover { background: var(--color-brand-hover); }
 .dg-form-submit:disabled { opacity: 0.55; cursor: not-allowed; }
 
+/* ── Selector de torneo para subir comprobante (Pagos · mobile-first) ──── */
+.dg-pay-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 2px 0 18px;
+}
+.dg-pay-label {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+.dg-pay-select-wrap {
+  position: relative;
+}
+/* Chevron propio (en vez del nativo) para controlar color y animarlo al abrir. */
+.dg-pay-select-wrap::after {
+  content: '';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  transition: transform 180ms var(--ease-out, ease);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23ff5500' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+.dg-pay-select-wrap:focus-within::after { transform: translateY(-50%) rotate(180deg); }
+.dg-pay-select {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  min-height: 52px;                 /* touch target comodo (>= 44px HIG) */
+  padding: 14px 46px 14px 16px;     /* deja sitio al chevron */
+  font-family: var(--font-body);
+  font-size: 16px;                  /* 16px evita el zoom automatico de iOS al enfocar */
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-fg);
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 150ms, box-shadow 150ms, background-color 150ms;
+}
+.dg-pay-select:hover { border-color: rgba(255, 85, 0, 0.45); }
+.dg-pay-select:focus {
+  border-color: var(--color-brand);
+  background-color: rgba(255, 85, 0, 0.05);
+  box-shadow: 0 0 0 3px rgba(255, 85, 0, 0.18);
+}
+/* Lista desplegable oscura donde el navegador lo permite (desktop / Android).
+   En iOS se usa el picker nativo del sistema, que ignora estos estilos. */
+.dg-pay-select option {
+  background-color: #12151d;
+  color: var(--color-fg);
+}
+.dg-pay-summary { margin-bottom: 18px; }
+
 .dg-payment-history { display: grid; gap: 8px; }
 .dg-payment-row {
   background: var(--color-bg-surface);
