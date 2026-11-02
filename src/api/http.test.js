@@ -7,11 +7,11 @@ import { requestJson } from './http';
 import { cerrarSesion, renovarSesion } from '../lib/supabase';
 import { irA } from '../utils/navegacion';
 
-function respuesta(status, body) {
+function respuesta(status, body, contentType = 'application/json') {
   return {
     ok: status >= 200 && status < 300,
     status,
-    headers: { get: () => 'application/json' },
+    headers: { get: () => contentType },
     json: async () => body,
     text: async () => JSON.stringify(body),
   };
@@ -70,6 +70,18 @@ describe('requestJson', () => {
 
     await expect(requestJson('/api/x', { headers: { Authorization: 'Bearer t' } }))
       .rejects.toMatchObject({ status: 403 });
+
+    expect(cerrarSesion).toHaveBeenCalled();
+    expect(irA).toHaveBeenCalledWith('/login?aviso=bloqueada');
+  });
+
+  // El backend responde los errores como ProblemDetail (application/problem+json): hay que leer su code.
+  it('problemJson_seLeeComoJson_yConservaElCode', async () => {
+    fetch.mockResolvedValue(respuesta(403, { code: 'CUENTA_BLOQUEADA', mensaje: 'Cuenta bloqueada' },
+      'application/problem+json;charset=UTF-8'));
+
+    await expect(requestJson('/api/x', { headers: { Authorization: 'Bearer t' } }))
+      .rejects.toMatchObject({ status: 403, message: 'Cuenta bloqueada', body: { code: 'CUENTA_BLOQUEADA' } });
 
     expect(cerrarSesion).toHaveBeenCalled();
     expect(irA).toHaveBeenCalledWith('/login?aviso=bloqueada');

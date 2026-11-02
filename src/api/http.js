@@ -5,7 +5,8 @@ const GATEWAY_ORIGIN = import.meta.env.VITE_GATEWAY_URL ?? '';
 
 async function parseBody(response) {
   const contentType = response.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
+  // application/json y también application/problem+json, que es como el backend responde los errores.
+  if (/^application\/([\w.-]+\+)?json/i.test(contentType)) {
     return response.json();
   }
   const text = await response.text();
