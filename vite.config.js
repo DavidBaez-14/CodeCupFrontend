@@ -12,4 +12,11 @@ export default defineConfig({
       },
     },
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.js',
+    // Vitest solo mira src/; los E2E de Playwright viven en e2e/ y los corre `playwright test`.
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
+  },
 })
