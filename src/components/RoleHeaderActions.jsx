@@ -1,26 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { solicitarRol } from '../api/auth';
-import { appwriteCreateJwt } from '../lib/appwrite';
+import { me, solicitarRol } from '../api/auth';
+import { RUTA_POR_ROL } from '../utils/destino';
 import {
-  getCedula,
   getEmail,
   getNombre,
   getRol,
   getRoles,
-  getToken,
+  guardarSesionDesdeMe,
   normalizeRole,
   setSession,
 } from '../utils/session';
 import '../styles/role-header-actions.css';
 import '../styles/role-switcher.css';
-
-const ROLE_ROUTE = {
-  ADMINISTRADOR: '/dashboard/admin',
-  ARBITRO: '/dashboard/arbitro',
-  DELEGADO: '/dashboard/delegado',
-  JUGADOR: '/dashboard/jugador',
-};
 
 const ROLE_LABEL = {
   ADMINISTRADOR: 'Administrador',
@@ -37,17 +29,10 @@ const ROLE_PRIORITY = {
   ARBITRO: 3,
 };
 
+// Jugador es automático al registrarse y Administrador solo llega por invitación (spec 0017).
 const REQUESTABLE_ROLES = [
-  { value: 'JUGADOR', label: 'Jugador' },
   { value: 'DELEGADO', label: 'Delegado' },
   { value: 'ARBITRO', label: 'Arbitro' },
-];
-
-const ROLES_JUGADOR = [
-  { value: 'ESTUDIANTE', label: 'Estudiante' },
-  { value: 'GRADUADO', label: 'Graduado' },
-  { value: 'PROFESOR', label: 'Profesor' },
-  { value: 'ADMINISTRATIVO', label: 'Administrativo' },
 ];
 
 const ROLE_ICONS = {
@@ -122,20 +107,18 @@ function RoleHeaderActions({ allowRoleRequest = true }) {
   );
   const currentRole = normalizeRole(getRol());
 
+  const [pendientes, setPendientes] = useState([]);
+
   const missingRoles = useMemo(() => {
     if (!allowRoleRequest) return [];
     return REQUESTABLE_ROLES
       .map((role) => role.value)
-      .filter((role) => !availableRoles.includes(role));
-  }, [allowRoleRequest, availableRoles]);
+      .filter((role) => !availableRoles.includes(role) && !pendientes.includes(role));
+  }, [allowRoleRequest, availableRoles, pendientes]);
 
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState('perfil');
-  const [requestRole, setRequestRole] = useState(missingRoles[0] || 'JUGADOR');
-  const [cedula, setCedula] = useState(getCedula() || '');
-  const [rolJugador, setRolJugador] = useState('ESTUDIANTE');
-  const [codigoUniversitario, setCodigoUniversitario] = useState('');
-  const [semestre, setSemestre] = useState('');
+  const [requestRole, setRequestRole] = useState(missingRoles[0] || 'DELEGADO');
   const [motivoSolicitud, setMotivoSolicitud] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -146,6 +129,21 @@ function RoleHeaderActions({ allowRoleRequest = true }) {
       setRequestRole(missingRoles[0]);
     }
   }, [missingRoles, requestRole]);
+
+  // Al abrir el menú se refrescan los roles desde la BD (spec 0019).
+  useEffect(() => {
+    if (!open) return undefined;
+    let cancelado = false;
+    me()
+      .then((datos) => {
+        if (cancelado || !datos) return;
+        setAvailableRoles(normalizeRoleList(datos.roles));
+        setPendientes(normalizeRoleList(datos.rolesPendientes));
+        guardarSesionDesdeMe(datos, null);
+      })
+      .catch(() => { /* sin red: se quedan los roles guardados */ });
+    return () => { cancelado = true; };
+  }, [open]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -165,81 +163,25 @@ function RoleHeaderActions({ allowRoleRequest = true }) {
     const normalized = normalizeRole(role);
     if (!normalized || normalized === currentRole) return;
 
-    setSession({
-      token: getToken(),
-      rol: normalized,
-      nombre: getNombre(),
-      email: getEmail(),
-      cedula: getCedula(),
-      roles: availableRoles,
-    });
+    setSession({ rol: normalized, roles: availableRoles });
 
-    navigate(ROLE_ROUTE[normalized] || '/login', { replace: true });
+    navigate(RUTA_POR_ROL[normalized] || '/login', { replace: true });
   };
 
   const handleRequest = async (event) => {
     event.preventDefault();
     setError('');
     setMessage('');
-
-    if (!cedula.trim()) {
-      setError('La cedula es obligatoria.');
-      return;
-    }
-
-    if (!/^\d{6,15}$/.test(cedula.trim())) {
-      setError('La cedula debe contener entre 6 y 15 digitos.');
-      return;
-    }
-
-    if (requestRole === 'JUGADOR' && rolJugador === 'ESTUDIANTE') {
-      if (!codigoUniversitario.trim()) {
-        setError('El codigo estudiantil es obligatorio.');
-        return;
-      }
-      if (!/^[1-9]\d*$/.test(String(semestre).trim())) {
-        setError('El semestre debe ser un numero valido.');
-        return;
-      }
-    }
-
     setLoading(true);
     try {
-      const appwriteJwt = await appwriteCreateJwt();
-      const data = await solicitarRol({
-        appwriteJwt,
-        cedula: cedula.trim(),
-        rol: requestRole,
-        rolJugador: requestRole === 'JUGADOR' ? rolJugador : undefined,
-        codigoUniversitario:
-          requestRole === 'JUGADOR' && rolJugador === 'ESTUDIANTE'
-            ? codigoUniversitario.trim()
-            : null,
-        semestre:
-          requestRole === 'JUGADOR' && rolJugador === 'ESTUDIANTE'
-            ? Number(semestre)
-            : null,
-        motivoSolicitud: motivoSolicitud.trim() || undefined,
-      });
-
-      if (data.estado === 'APROBADO' && data.token?.token) {
-        const updatedRoles = normalizeRoleList(data.token.roles);
-        setAvailableRoles(updatedRoles.length ? updatedRoles : availableRoles);
-        setSession({
-          token: data.token.token,
-          rol: requestRole,
-          nombre: data.token.nombre,
-          email: data.token.correo,
-          cedula: data.token.cedula,
-          roles: data.token.roles,
-        });
-        navigate(ROLE_ROUTE[requestRole] || '/dashboard/jugador', { replace: true });
-        return;
-      }
-
-      setMessage(data.mensaje || 'Solicitud enviada. Espera aprobacion del administrador.');
+      await solicitarRol({ rol: requestRole, motivoSolicitud: motivoSolicitud.trim() });
+      setPendientes((prev) => normalizeRoleList([...prev, requestRole]));
+      setMotivoSolicitud('');
+      setMessage('Solicitud enviada');
     } catch (err) {
-      setError(err?.message || 'No se pudo enviar la solicitud.');
+      setError(err?.body?.code === 'SOLICITUD_EXISTENTE'
+        ? 'Ya tienes una solicitud pendiente.'
+        : (err?.message || 'No se pudo enviar la solicitud.'));
     } finally {
       setLoading(false);
     }
@@ -321,103 +263,45 @@ function RoleHeaderActions({ allowRoleRequest = true }) {
                   <p className="role-profile-note">Este perfil no requiere solicitudes adicionales.</p>
                 )}
 
-                {allowRoleRequest && missingRoles.length === 0 && (
+                {allowRoleRequest && pendientes.length > 0 && (
+                  <p className="role-profile-note">
+                    Pendiente de aprobación: {pendientes.map((r) => ROLE_LABEL[r] || r).join(', ')}.
+                  </p>
+                )}
+
+                {allowRoleRequest && missingRoles.length === 0 && pendientes.length === 0 && (
                   <p className="role-profile-note">Ya tienes todos los roles disponibles.</p>
                 )}
 
                 {allowRoleRequest && missingRoles.length > 0 && (
                   <form className="role-request-form" onSubmit={handleRequest}>
-                    <div className="role-request-grid">
-                      <div className="role-request-field">
-                        <label className="role-form-label" htmlFor="role-request-cedula">Cedula</label>
-                        <input
-                          id="role-request-cedula"
-                          className="form-input"
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="1090000001"
-                          value={cedula}
-                          onChange={(event) => setCedula(event.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="role-request-field">
-                        <label className="role-form-label" htmlFor="role-request-tipo">Rol solicitado</label>
-                        <select
-                          id="role-request-tipo"
-                          className="form-input"
-                          value={requestRole}
-                          onChange={(event) => setRequestRole(event.target.value)}
-                        >
-                          {REQUESTABLE_ROLES.filter((opt) => missingRoles.includes(opt.value)).map((opt) => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
-                      </div>
+                    <div className="role-request-field">
+                      <label className="role-form-label" htmlFor="role-request-tipo">Rol solicitado</label>
+                      <select
+                        id="role-request-tipo"
+                        className="form-input"
+                        value={requestRole}
+                        onChange={(event) => setRequestRole(event.target.value)}
+                      >
+                        {REQUESTABLE_ROLES.filter((opt) => missingRoles.includes(opt.value)).map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
                     </div>
 
-                    {requestRole === 'JUGADOR' && (
-                      <div className="role-request-grid">
-                        <div className="role-request-field">
-                          <label className="role-form-label" htmlFor="role-request-rol-jugador">Rol del jugador</label>
-                          <select
-                            id="role-request-rol-jugador"
-                            className="form-input"
-                            value={rolJugador}
-                            onChange={(event) => setRolJugador(event.target.value)}
-                          >
-                            {ROLES_JUGADOR.map((opt) => (
-                              <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                        {rolJugador === 'ESTUDIANTE' && (
-                          <>
-                            <div className="role-request-field">
-                              <label className="role-form-label" htmlFor="role-request-codigo">Codigo estudiantil</label>
-                              <input
-                                id="role-request-codigo"
-                                className="form-input"
-                                type="text"
-                                placeholder="1155404"
-                                value={codigoUniversitario}
-                                onChange={(event) => setCodigoUniversitario(event.target.value)}
-                                required
-                              />
-                            </div>
-                            <div className="role-request-field">
-                              <label className="role-form-label" htmlFor="role-request-semestre">Semestre</label>
-                              <input
-                                id="role-request-semestre"
-                                className="form-input"
-                                type="number"
-                                min="1"
-                                max="20"
-                                placeholder="7"
-                                value={semestre}
-                                onChange={(event) => setSemestre(event.target.value)}
-                                required
-                              />
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )}
-
                     <div className="role-request-field">
-                      <label className="role-form-label" htmlFor="role-request-motivo">Comentario opcional</label>
+                      <label className="role-form-label" htmlFor="role-request-motivo">Motivo</label>
                       <textarea
                         id="role-request-motivo"
                         className="form-input"
                         rows={3}
-                        placeholder="Describe tu solicitud si es necesario."
+                        maxLength={500}
+                        placeholder="Opcional: cuéntale al administrador por qué."
                         value={motivoSolicitud}
                         onChange={(event) => setMotivoSolicitud(event.target.value)}
                       />
                     </div>
 
-                    {error && <p className="banner banner-error">{error}</p>}
-                    {message && <p className="banner banner-success">{message}</p>}
 
                     <div className="role-request-actions">
                       <button className="action-button primary" type="submit" disabled={loading}>
@@ -426,6 +310,9 @@ function RoleHeaderActions({ allowRoleRequest = true }) {
                     </div>
                   </form>
                 )}
+
+                {error && <p className="banner banner-error">{error}</p>}
+                {message && <p className="banner banner-success">{message}</p>}
               </div>
             )}
           </div>

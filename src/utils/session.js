@@ -5,6 +5,7 @@ const EMAIL_KEY = 'codecup_email';
 const CEDULA_KEY = 'codecup_cedula';
 const ROLES_KEY = 'codecup_roles';
 const LOGIN_ROLE_KEY = 'codecup_login_role';
+const INVITACION_KEY = 'codecup_invitacion';
 
 export function setSession({ token, rol, nombre, email, cedula, roles }) {
   if (token) localStorage.setItem(TOKEN_KEY, token);
@@ -22,6 +23,22 @@ export function clearSession() {
   localStorage.removeItem(EMAIL_KEY);
   localStorage.removeItem(CEDULA_KEY);
   localStorage.removeItem(ROLES_KEY);
+}
+
+/** Access token vigente de Supabase (lo mantiene lib/supabase con onAuthStateChange). */
+export function setToken(token) {
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+}
+
+/** Guarda lo que devuelve GET /api/auth/me. `rol` es el rol activo (si es null no se cambia). */
+export function guardarSesionDesdeMe(me, rol) {
+  setSession({
+    rol: rol || undefined,
+    nombre: me?.nombre,
+    email: me?.correo,
+    cedula: me?.cedula,
+    roles: me?.roles || [],
+  });
 }
 
 export function getToken() {
@@ -86,4 +103,17 @@ export function getLoginRole() {
 
 export function clearLoginRole() {
   sessionStorage.removeItem(LOGIN_ROLE_KEY);
+}
+
+/** Invitación abierta antes de iniciar sesión: se acepta después del login o del registro. */
+export function setInvitacionPendiente(token) {
+  if (token) localStorage.setItem(INVITACION_KEY, token);
+}
+
+export function getInvitacionPendiente() {
+  return localStorage.getItem(INVITACION_KEY);
+}
+
+export function clearInvitacionPendiente() {
+  localStorage.removeItem(INVITACION_KEY);
 }

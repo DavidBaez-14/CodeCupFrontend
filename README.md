@@ -1,16 +1,31 @@
-# React + Vite
+# CodeCup — Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite. Consume `BackendCodeCup` (Spring Boot, `:8082`) y entra con **Supabase Auth** (spec 0019).
 
-Currently, two official plugins are available:
+## Arrancar en local
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Copia `.env.example` como `.env.local` y completa:
+   - `VITE_SUPABASE_URL`: la URL de Supabase #1;
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`: la clave `sb_publishable_…`. Es pública por diseño; **nunca** pongas aquí la clave secreta;
+   - `VITE_GATEWAY_URL=http://localhost:8082`.
+2. Arranca el backend desde el Spring Boot Dashboard de VS Code.
+3. `npm install` y `npm run dev`. La web queda en `http://localhost:5173`, que es el Site URL configurado en Supabase.
 
-## React Compiler
+## Cómo se entra (spec 0019)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Registro:** correo y contraseña → correo de confirmación → `/auth/callback?token_hash=…` → `/complete-signup` (nombres y documento, solo a nuestro backend).
+- **Login:** con contraseña o con Google. Los íconos eligen el rol con el que se entra.
+- **Recuperación:** `/recuperar-contrasena` → correo → `/restablecer-contrasena`.
+- **Invitaciones:** el admin crea el enlace en "Usuarios → Invitar usuario"; quien lo abre (`/invitacion/:token`) recibe el rol.
+- **Sesión:** `codecup_token` guarda el access token de Supabase y se renueva solo. Ante un `401`, `api/http.js` renueva y reintenta una vez.
 
-## Expanding the ESLint configuration
+## Pruebas
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm test          # Vitest + Testing Library
+npm run test:e2e  # Playwright con la red simulada (no toca Supabase ni el backend)
+npm run lint
+npm run build
+```
+
+Para probar contra Supabase #1 con datos, el backend trae un seed de usuarios de prueba (`@prueba.local`); ver el README de `BackendCodeCup`.

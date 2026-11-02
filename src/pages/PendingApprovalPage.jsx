@@ -1,18 +1,37 @@
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
-import { appwriteLogout } from '../lib/appwrite';
-import { clearSession } from '../utils/session';
+import { me } from '../api/auth';
+import { cerrarSesion } from '../lib/supabase';
+import { NOMBRE_ROL, RUTA_POR_ROL } from '../utils/destino';
+import { guardarSesionDesdeMe, normalizeRole } from '../utils/session';
 import '../styles/login.css';
 
+/** /pending (spec 0019): la solicitud de Delegado o Árbitro está en revisión, pero se puede jugar. */
 function PendingApprovalPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const reason = searchParams.get('reason');
-  const esValidacionManual = reason === 'validacion';
+  const [datos, setDatos] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelado = false;
+    me()
+      .then((respuesta) => { if (!cancelado) setDatos(respuesta); })
+      .catch((err) => { if (!cancelado) setError(err?.message || 'No fue posible revisar tu cuenta.'); });
+    return () => { cancelado = true; };
+  }, []);
+
+  const pendientes = (datos?.rolesPendientes || []).map(normalizeRole);
+  const puedeJugar = (datos?.roles || []).map(normalizeRole).includes('JUGADOR');
+  const nombresPendientes = pendientes.map((rol) => NOMBRE_ROL[rol] || rol).join(' y ');
+
+  const entrarComoJugador = () => {
+    guardarSesionDesdeMe(datos, 'JUGADOR');
+    navigate(RUTA_POR_ROL.JUGADOR, { replace: true });
+  };
 
   const handleLogout = async () => {
-    clearSession();
-    await appwriteLogout();
+    await cerrarSesion();
     navigate('/', { replace: true });
   };
 
@@ -27,26 +46,26 @@ function PendingApprovalPage() {
         </div>
 
         <div className="pending-icon" aria-hidden="true">⏳</div>
-        <div className="login-title">
-          {esValidacionManual ? 'Validación manual pendiente' : 'Solicitud en revisión'}
-        </div>
+        <div className="login-title">Solicitud en revisión</div>
         <p className="pending-text">
-          {esValidacionManual
-            ? 'Tu cédula no aparece en el padrón de Sistemas. Un administrador revisará tu caso manualmente y, si corresponde, te habilitará como jugador.'
-            : 'Tu cuenta fue creada con éxito. Un administrador debe aprobarla antes de que puedas acceder al sistema.'}
+          {pendientes.length
+            ? `Tu solicitud para ser ${nombresPendientes} está en revisión. Un administrador la aprobará.`
+            : 'No tienes solicitudes pendientes en este momento.'}
         </p>
-        <p className="pending-text-muted">
-          {esValidacionManual
-            ? 'Mientras tanto puedes cerrar sesión. Cuando el admin te valide, podrás volver a entrar normalmente.'
-            : 'Te avisaremos al correo registrado cuando tu cuenta esté lista. Puedes intentar iniciar sesión más tarde.'}
-        </p>
+        {puedeJugar && (
+          <p className="pending-text-muted">Mientras tanto puedes usar CodeCup como jugador.</p>
+        )}
+        {error && <p className="login-error">{error}</p>}
 
-        <button className="btn-login-submit" type="button" onClick={handleLogout}>
-          Cerrar sesión
-        </button>
-
-        <div className="login-back">
-          <button type="button" onClick={() => navigate('/login')}>← Volver al inicio de sesión</button>
+        <div className="login-actions">
+          {puedeJugar && (
+            <button className="btn-login-submit" type="button" onClick={entrarComoJugador}>
+              Entrar como jugador
+            </button>
+          )}
+          <button className="btn-signup-link" type="button" onClick={handleLogout}>
+            Cerrar sesión
+          </button>
         </div>
       </div>
     </div>

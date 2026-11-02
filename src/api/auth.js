@@ -1,46 +1,37 @@
 import { requestJson } from './http';
+import { getToken } from '../utils/session';
 
-export function exchange(appwriteJwt) {
-  return requestJson('/api/auth/exchange', {
+// Endpoints de cuenta de BackendCodeCup (spec 0017). El token es el access token de Supabase.
+function cabeceras(token, json = false) {
+  const headers = { Authorization: `Bearer ${token ?? getToken()}` };
+  if (json) headers['Content-Type'] = 'application/json';
+  return headers;
+}
+
+/** 404 CUENTA_NO_REGISTRADA si todavía debe completar el registro. */
+export function me(token) {
+  return requestJson('/api/auth/me', { method: 'GET', headers: cabeceras(token) });
+}
+
+export function registro({ nombres, apellidos, tipoDocumento, numeroDocumento }, token) {
+  return requestJson('/api/auth/registro', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ appwriteJwt }),
+    headers: cabeceras(token, true),
+    body: JSON.stringify({ nombres, apellidos, tipoDocumento, numeroDocumento }),
   });
 }
 
-export function solicitarRol({
-  appwriteJwt,
-  cedula,
-  rol,
-  rolJugador,
-  codigoUniversitario,
-  semestre,
-  motivoSolicitud,
-}) {
+export function solicitarRol({ rol, motivoSolicitud }, token) {
   return requestJson('/api/auth/solicitar-rol', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      appwriteJwt,
-      cedula,
-      rol,
-      rolJugador,
-      codigoUniversitario,
-      semestre,
-      motivoSolicitud,
-    }),
+    headers: cabeceras(token, true),
+    body: JSON.stringify({ rol, motivoSolicitud }),
   });
 }
 
-export function refresh(token) {
-  return requestJson('/api/auth/refresh', {
+export function aceptarInvitacion(tokenInvitacion, token) {
+  return requestJson(`/api/auth/invitaciones/${encodeURIComponent(tokenInvitacion)}/aceptar`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-}
-
-export function padronPreview(cedula) {
-  return requestJson(`/api/auth/padron-preview/${encodeURIComponent(cedula)}`, {
-    method: 'GET',
+    headers: cabeceras(token),
   });
 }

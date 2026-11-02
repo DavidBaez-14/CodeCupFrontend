@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
 import RoleHeaderActions from '../components/RoleHeaderActions';
 import { listPartidosTorneo, listTorneosAdmin } from '../api/supercopa';
-import { appwriteLogout } from '../lib/appwrite';
-import { clearSession, getNombre, getToken } from '../utils/session';
+import { cerrarSesion } from '../lib/supabase';
+import { getNombre, getToken } from '../utils/session';
 import MatchListView from './arbitro/MatchListView';
 import GestionPartidoModal from '../components/supercopa/GestionPartidoModal';
 import '../styles/admin.css';
@@ -103,8 +103,7 @@ function ArbitroDashboard() {
   };
 
   const handleLogout = async () => {
-    clearSession();
-    await appwriteLogout();
+    await cerrarSesion();
     navigate('/');
   };
 

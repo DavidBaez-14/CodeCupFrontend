@@ -12,17 +12,6 @@ export function listarCuentas({ q, rol, page = 0, size = 8 } = {}, token) {
   });
 }
 
-export function crearCuenta(payload, token) {
-  return requestJson('/api/admin/cuentas', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
-}
-
 export function asignarRol({ cedula, rol, motivo }, token) {
   return requestJson('/api/admin/roles/asignar', {
     method: 'POST',

@@ -4,8 +4,8 @@ import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
 import RoleHeaderActions from '../components/RoleHeaderActions';
 import { aprobarRol, aprobarTodosCuenta, listPendientes, rechazarRol, rechazarTodosCuenta } from '../api/registros';
 import { getJugadorByCedula, uploadCsv } from '../api/jugadores';
-import { appwriteLogout } from '../lib/appwrite';
-import { clearSession, getEmail, getNombre, getToken } from '../utils/session';
+import { cerrarSesion } from '../lib/supabase';
+import { getEmail, getNombre, getToken } from '../utils/session';
 import ConfigurarTorneoView from './admin/ConfigurarTorneoView';
 import GestionarEquiposView from './admin/GestionarEquiposView';
 import FixtureView from './admin/FixtureView';
@@ -88,8 +88,7 @@ function AdminDashboard() {
   const email = getEmail() || '';
 
   const handleLogout = async () => {
-    clearSession();
-    await appwriteLogout();
+    await cerrarSesion();
     navigate('/');
   };
 

@@ -5,8 +5,8 @@ import PerfilDeportivoGuard from '../components/PerfilDeportivoGuard';
 import RoleHeaderActions from '../components/RoleHeaderActions';
 import { useToast } from '../components/Toast';
 import { getMiEquipo, listSolicitudesPendientes } from '../api/supercopa';
-import { appwriteLogout } from '../lib/appwrite';
-import { clearSession, getNombre, getToken } from '../utils/session';
+import { cerrarSesion } from '../lib/supabase';
+import { getNombre, getToken } from '../utils/session';
 import MiEquipoTab from './delegado/MiEquipoTab';
 import PagosTab from './delegado/PagosTab';
 import SolicitudesTab from './delegado/SolicitudesTab';
@@ -35,8 +35,7 @@ function DelegadoDashboard() {
   const { Toast, toast } = useToast();
 
   const handleLogout = async () => {
-    clearSession();
-    await appwriteLogout();
+    await cerrarSesion();
     navigate('/');
   };
 

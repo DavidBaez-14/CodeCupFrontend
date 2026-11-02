@@ -394,3 +394,25 @@ select.form-input {
     gap: 0;
   }
 }
+
+/* Spec 0019: enlace a la recuperación de contraseña y avisos informativos del login. */
+.login-forgot {
+  display: block;
+  margin: -6px 0 14px;
+  text-align: right;
+  color: var(--color-brand);
+  font-family: var(--font-body);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.login-forgot:hover {
+  text-decoration: underline;
+}
+
+.login-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}

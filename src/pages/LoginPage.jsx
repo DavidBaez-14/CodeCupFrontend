@@ -1,27 +1,25 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
-import { exchange } from '../api/auth';
-import { appwriteCreateJwt, appwriteLogin, appwriteLogout, appwriteOAuthGoogle } from '../lib/appwrite';
+import { entrarConContrasena, entrarConGoogle } from '../lib/supabase';
+import { despuesDeEntrar } from '../utils/destino';
 import {
-  clearLoginRole,
-  getLoginRole,
-  hasRole,
-  normalizeRole,
-  pickPrimaryRole,
-  setLoginRole,
-  setSession,
-} from '../utils/session';
+  MENSAJE_BLOQUEADA,
+  MENSAJE_CONTRASENA_ACTUALIZADA,
+  MENSAJE_SESION_VENCIDA,
+  mensajeDeErrorAuth,
+} from '../utils/erroresAuth';
+import { getLoginRole, normalizeRole, setLoginRole } from '../utils/session';
 import '../styles/login.css';
 
-const ROLE_ROUTE = {
-  ADMINISTRADOR: '/dashboard/admin',
-  ARBITRO: '/dashboard/arbitro',
-  DELEGADO: '/dashboard/delegado',
-  JUGADOR: '/dashboard/jugador',
-};
-
 const DEFAULT_ROLE = 'JUGADOR';
+
+// Avisos que llegan en la URL (/login?aviso=…) desde otras pantallas o desde api/http.js.
+const AVISOS = {
+  bloqueada: { tipo: 'error', texto: MENSAJE_BLOQUEADA },
+  'sesion-vencida': { tipo: 'error', texto: MENSAJE_SESION_VENCIDA },
+  'contrasena-actualizada': { tipo: 'info', texto: MENSAJE_CONTRASENA_ACTUALIZADA },
+};
 
 const ROLE_OPTIONS = [
   {
@@ -109,87 +107,44 @@ function LoginPage() {
   const [selectedRole, setSelectedRole] = useState(safeInitialRole);
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
-  const [error, setError] = useState(() => {
-    const params = new URLSearchParams(location.search);
-    return params.get('oauthError') || '';
-  });
+  const params = new URLSearchParams(location.search);
+  const aviso = AVISOS[params.get('aviso')];
+  const [error, setError] = useState(() => params.get('oauthError') || (aviso?.tipo === 'error' ? aviso.texto : ''));
+  const [info, setInfo] = useState(aviso?.tipo === 'info' ? aviso.texto : '');
   const [loading, setLoading] = useState(false);
 
   const handleGoogle = async () => {
     setError('');
+    setInfo('');
     try {
-      // Cierra cualquier sesión Appwrite previa para que el callback de Google sea limpio.
+      // El rol elegido viaja en sessionStorage hasta /auth/callback.
       setLoginRole(selectedRole);
-      await appwriteLogout();
-      const origin = window.location.origin;
-      appwriteOAuthGoogle({
-        successUrl: `${origin}/oauth/callback`,
-        failureUrl: `${origin}/login?oauthError=${encodeURIComponent('No se pudo autenticar con Google.')}`,
-      });
+      await entrarConGoogle();
     } catch (err) {
-      setError(err?.message || 'No se pudo iniciar el login con Google.');
+      setError(mensajeDeErrorAuth(err, 'No se pudo iniciar el login con Google.'));
     }
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
+    setInfo('');
     setLoading(true);
 
     try {
-      // 1. Cierra sesión previa de Appwrite por si quedó una colgada de otro usuario.
-      await appwriteLogout();
+      await entrarConContrasena(correo, contrasena);
+    } catch (err) {
+      setError(mensajeDeErrorAuth(err, 'No fue posible iniciar sesión.'));
+      setLoading(false);
+      return;
+    }
 
-      // 2. Login en Appwrite -> sesión activa de este usuario.
-      await appwriteLogin({ email: correo, password: contrasena });
-
-      // 3. JWT corto de Appwrite (~15 min) que el backend va a verificar.
-      const appwriteJwt = await appwriteCreateJwt();
-
-      // 4. Exchange contra el backend -> JWT propio + roles.
-      const data = await exchange(appwriteJwt);
-      const rolPreferido = normalizeRole(selectedRole || DEFAULT_ROLE);
-      const tieneRol = hasRole(data.roles, rolPreferido);
-
-      if (!tieneRol) {
-        if (rolPreferido === 'ADMINISTRADOR') {
-          setError('Cuenta no registrada para Administrador.');
-          await appwriteLogout();
-          clearLoginRole();
-          return;
-        }
-        navigate(`/complete-signup?tipo=${encodeURIComponent(rolPreferido)}`, { replace: true });
-        return;
-      }
-
-      const rolPrimario = rolPreferido || pickPrimaryRole(data.roles);
-      setSession({
-        token: data.token,
-        rol: rolPrimario,
-        nombre: data.nombre,
-        email: data.correo,
-        cedula: data.cedula,
-        roles: data.roles,
-      });
-
-      navigate(ROLE_ROUTE[rolPrimario] || '/login', { replace: true });
-    } catch (requestError) {
-      const mensaje = requestError?.message || 'No fue posible iniciar sesión.';
-
-      // Si la cuenta existe pero ningún rol está aprobado todavía, a la pantalla de espera.
-      if (/pendiente/i.test(mensaje) || /sin roles/i.test(mensaje)) {
-        navigate('/pending', { replace: true });
-        return;
-      }
-
-      // Si no está registrada en el backend, lo invitamos a completar el registro.
-      if (/no registrad[ao]/i.test(mensaje)) {
-        navigate('/signup', { replace: true, state: { hint: 'Completa tu registro.' } });
-        return;
-      }
-
-      setError(mensaje);
-      await appwriteLogout();
+    try {
+      // /me decide: completar registro, solicitar rol, esperar o entrar al dashboard del rol elegido.
+      const { error: mensaje } = await despuesDeEntrar({ navigate, rolElegido: selectedRole });
+      if (mensaje) setError(mensaje);
+    } catch (err) {
+      setError(err?.message || 'No fue posible iniciar sesión.');
     } finally {
       setLoading(false);
     }
@@ -235,11 +190,14 @@ function LoginPage() {
             />
           </div>
 
+          <Link to="/recuperar-contrasena" className="login-forgot">¿Olvidaste tu contraseña?</Link>
+
           <button className="btn-login-submit" type="submit" disabled={loading}>
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
 
+        {info && <p className="login-hint">{info}</p>}
         {error && <p className="login-error">{error}</p>}
 
         <div className="login-separator">— o —</div>

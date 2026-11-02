@@ -2,13 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { getToken } from '../../utils/session';
 import {
   asignarRol,
-  crearCuenta,
   eliminarCuenta,
   listarCuentas,
   revocarRol,
 } from '../../api/cuentas';
 import UsersTable from './usuarios/UsersTable';
-import CreateUserModal from './usuarios/CreateUserModal';
+import InvitarUsuarioModal from './usuarios/InvitarUsuarioModal';
 import AssignRoleModal from './usuarios/AssignRoleModal';
 import AssignAdminModal from './usuarios/AssignAdminModal';
 import RevokeRoleModal from './usuarios/RevokeRoleModal';
@@ -89,13 +88,6 @@ function UsuariosView() {
     setModalDelete({ open: true, cuenta });
   };
 
-  const submitCreate = async (payload) => {
-    const result = await crearCuenta(payload, getToken());
-    showSuccess('Cuenta creada. Comparte la contraseña con el usuario.');
-    load();
-    return result;
-  };
-
   const submitAssign = async (payload) => {
     await asignarRol(payload, getToken());
     showSuccess(`Rol ${payload.rol.toLowerCase()} asignado.`);
@@ -156,7 +148,7 @@ function UsuariosView() {
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Crear usuario
+          Invitar usuario
         </button>
       </div>
 
@@ -180,10 +172,10 @@ function UsuariosView() {
         onDelete={handleDelete}
       />
 
-      <CreateUserModal
+      <InvitarUsuarioModal
         open={modalCreate}
         onClose={() => setModalCreate(false)}
-        onSubmit={submitCreate}
+        onInvitado={() => showSuccess('Invitación creada. Comparte el enlace con la persona.')}
       />
       <AssignRoleModal
         open={modalAssign.open}

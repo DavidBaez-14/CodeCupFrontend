@@ -44,4 +44,10 @@ export default defineConfig([
     files: ['e2e/**/*.js', 'playwright.config.js', 'vite.config.js'],
     languageOptions: { globals: { ...globals.node } },
   },
+  {
+    // Tests de Vitest y sus helpers: corren en Node y no pasan por fast refresh.
+    files: ['src/**/*.test.{js,jsx}', 'src/test/**/*.{js,jsx}'],
+    languageOptions: { globals: { ...globals.node } },
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
 ])

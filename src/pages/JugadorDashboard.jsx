@@ -18,8 +18,8 @@ import {
   POSICIONES,
 } from '../constants/perfilDeportivo';
 import { TEAM_COLORS } from '../data/supercopa';
-import { appwriteLogout } from '../lib/appwrite';
-import { clearSession, getNombre, getToken } from '../utils/session';
+import { cerrarSesion } from '../lib/supabase';
+import { getNombre, getToken } from '../utils/session';
 import '../styles/admin.css';
 import '../styles/role-shell.css';
 import '../styles/jugador.css';
@@ -60,8 +60,7 @@ function JugadorDashboard() {
   const [perfilErrorEdit, setPerfilErrorEdit] = useState('');
 
   const handleLogout = async () => {
-    clearSession();
-    await appwriteLogout();
+    await cerrarSesion();
     navigate('/');
   };
 
