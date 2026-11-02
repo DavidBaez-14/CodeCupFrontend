@@ -141,7 +141,7 @@ function TeamSection({ side, match, onTogglePlayer, onAddAll, disabled, onRegist
   );
 }
 
-function PlayerRow({ player: p, side, onField, onToggle, disabled, onRegistrarPago, onHabilitarExcepcion }) {
+function PlayerRow({ player: p, onField, onToggle, disabled, onRegistrarPago, onHabilitarExcepcion }) {
   const isSuspended = p.suspension && p.suspension.apto === false;
   let cls = '';
   if (onField) cls = 'on-field';

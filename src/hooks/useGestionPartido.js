@@ -237,9 +237,6 @@ export default function useGestionPartido(partidoBase) {
     if (!match) return;
     const equipoTorneoId = side === 'home' ? match.localEquipoTorneoId : match.visitanteEquipoTorneoId;
     try {
-      const rosterFiltrado = match[side === 'home' ? 'homeRoster' : 'awayRoster']
-        .filter(p => !p.suspension); // No agrega bloqueados
-      
       // La API asume addAll por equipoTorneoId, pero el backend validará elegibilidad
       // Si el backend lanza error, lo atrapamos.
       await agregarTodosJugadores(partidoId, equipoTorneoId, getToken());

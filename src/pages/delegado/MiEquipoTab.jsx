@@ -55,7 +55,7 @@ function MiEquipoTab({ onEquipoCreado, toast }) {
       const list = Array.isArray(data) ? data : [];
       setInscripciones(list);
       if (list.length && !inscActiva) setInscActiva(list[0].id);
-    } catch { }
+    } catch { /* sin inscripciones: el plantel queda vacío */ }
   }, [inscActiva]);
 
   const loadMiembros = useCallback(async () => {
