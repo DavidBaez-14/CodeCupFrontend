@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
-import PerfilDeportivoGuard from '../components/PerfilDeportivoGuard';
 import RoleHeaderActions from '../components/RoleHeaderActions';
 import { useToast } from '../components/Toast';
 import { getMiEquipo, listSolicitudesPendientes } from '../api/supercopa';
@@ -60,7 +59,6 @@ function DelegadoDashboard() {
   };
 
   return (
-    <PerfilDeportivoGuard>
     <main className="role-shell delegado-shell">
       <header className="role-topbar delegado-topbar">
         <div className="role-brand">
@@ -120,7 +118,6 @@ function DelegadoDashboard() {
 
       <Toast />
     </main>
-    </PerfilDeportivoGuard>
   );
 }
 

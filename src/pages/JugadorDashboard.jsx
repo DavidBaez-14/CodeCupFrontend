@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
-import PerfilDeportivoGuard from '../components/PerfilDeportivoGuard';
 import RoleHeaderActions from '../components/RoleHeaderActions';
 import {
   actualizarMiPerfil,
@@ -54,7 +53,8 @@ function JugadorDashboard() {
   const [perfil, setPerfil] = useState(null);
   const [loadingPerfil, setLoadingPerfil] = useState(false);
   const [errorPerfil, setErrorPerfil] = useState('');
-  const [perfilForm, setPerfilForm] = useState({ alturaCm: '', piernaHabil: 'DERECHA', posicion: 'MEDIOCAMPISTA' });
+  // Perfil deportivo opcional (spec 0020): '' = sin indicar.
+  const [perfilForm, setPerfilForm] = useState({ alturaCm: '', piernaHabil: '', posicion: '' });
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
   const [perfilMsg, setPerfilMsg] = useState('');
   const [perfilErrorEdit, setPerfilErrorEdit] = useState('');
@@ -115,9 +115,7 @@ function JugadorDashboard() {
     return () => { alive = false; };
   }, [token]);
 
-  // El perfil deportivo (altura/pierna/posicion) ya se captura una sola vez
-  // via PerfilDeportivoGuard al entrar al dashboard; aqui solo enviamos el
-  // equipoTorneoId, sin modal intermedio.
+  // El perfil deportivo es opcional (spec 0020): solo se envia el equipoTorneoId.
   const handleSolicitar = async (equipo) => {
     setSolicitudMsg('');
     setErrorSolicitud('');
@@ -144,8 +142,8 @@ function JugadorDashboard() {
         if (data) {
           setPerfilForm({
             alturaCm: data.alturaCm != null ? String(data.alturaCm) : '',
-            piernaHabil: data.piernaHabil || 'DERECHA',
-            posicion: data.posicion || 'MEDIOCAMPISTA',
+            piernaHabil: data.piernaHabil || '',
+            posicion: data.posicion || '',
           });
         }
       })
@@ -158,8 +156,10 @@ function JugadorDashboard() {
     event.preventDefault();
     setPerfilMsg('');
     setPerfilErrorEdit('');
-    const altura = Number(perfilForm.alturaCm);
-    if (!Number.isFinite(altura) || altura < ALTURA_MIN || altura > ALTURA_MAX) {
+    // Los tres datos son opcionales: lo vacío se envía como null (queda sin indicar).
+    const alturaTexto = String(perfilForm.alturaCm).trim();
+    const altura = alturaTexto === '' ? null : Number(alturaTexto);
+    if (altura !== null && (!Number.isFinite(altura) || altura < ALTURA_MIN || altura > ALTURA_MAX)) {
       setPerfilErrorEdit(`Altura debe estar entre ${ALTURA_MIN} y ${ALTURA_MAX} cm.`);
       return;
     }
@@ -167,8 +167,8 @@ function JugadorDashboard() {
     try {
       const actualizado = await actualizarMiPerfil({
         alturaCm: altura,
-        piernaHabil: perfilForm.piernaHabil,
-        posicion: perfilForm.posicion,
+        piernaHabil: perfilForm.piernaHabil || null,
+        posicion: perfilForm.posicion || null,
       }, token);
       setPerfil(actualizado);
       setPerfilMsg('Perfil deportivo actualizado.');
@@ -180,7 +180,6 @@ function JugadorDashboard() {
   };
 
   return (
-    <PerfilDeportivoGuard>
     <main className="role-shell jugador-shell">
       <header className="role-topbar jugador-topbar">
         <div className="role-brand">
@@ -314,8 +313,9 @@ function JugadorDashboard() {
               <p className="empty-state">Cargando tu perfil…</p>
             ) : perfil ? (
               <div className="perfil-stack">
-                <form onSubmit={handleGuardarPerfil} className="perfil-block">
+                <form onSubmit={handleGuardarPerfil} className="perfil-block" noValidate>
                   <h4>Datos deportivos</h4>
+                  <p className="muted">Opcionales. Puedes completarlos o cambiarlos cuando quieras.</p>
                   <div className="form-row">
                     <label className="form-field">
                       <span className="form-label">Altura (cm)</span>
@@ -326,7 +326,7 @@ function JugadorDashboard() {
                         className="form-input"
                         value={perfilForm.alturaCm}
                         onChange={(e) => setPerfilForm((p) => ({ ...p, alturaCm: e.target.value }))}
-                        required
+                        placeholder="Sin indicar"
                       />
                     </label>
                     <label className="form-field">
@@ -336,6 +336,7 @@ function JugadorDashboard() {
                         value={perfilForm.piernaHabil}
                         onChange={(e) => setPerfilForm((p) => ({ ...p, piernaHabil: e.target.value }))}
                       >
+                        <option value="">Sin indicar</option>
                         {PIERNAS.map((opt) => (
                           <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
@@ -348,6 +349,7 @@ function JugadorDashboard() {
                         value={perfilForm.posicion}
                         onChange={(e) => setPerfilForm((p) => ({ ...p, posicion: e.target.value }))}
                       >
+                        <option value="">Sin indicar</option>
                         {POSICIONES.map((opt) => (
                           <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
@@ -483,7 +485,6 @@ function JugadorDashboard() {
       </section>
 
     </main>
-    </PerfilDeportivoGuard>
   );
 }
 

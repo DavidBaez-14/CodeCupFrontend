@@ -51,7 +51,8 @@ const meJugador = {
 
 /**
  * Simula Supabase Auth y el backend. `registrado` arranca en false para el flujo de registro:
- * /api/auth/me responde 404 hasta que llega POST /api/auth/registro.
+ * /api/auth/me responde 404 hasta que llega POST /api/auth/registro. Una cuenta recién
+ * registrada no tiene perfil deportivo (spec 0020): /mi-perfil lo devuelve vacío.
  */
 async function simularRed(page, { registrado = true } = {}) {
   const estado = { registrado, registroBody: null, nuevaContrasena: null, recuperacionPedida: false };
@@ -90,7 +91,10 @@ async function simularRed(page, { registrado = true } = {}) {
       return route.fulfill(json(meJugador, 201));
     }
     if (pathname.endsWith('/api/supercopa/mi-perfil')) {
-      return route.fulfill(json({ nombre: 'Ana María Pérez', alturaCm: 170, piernaHabil: 'DERECHA', posicion: 'DELANTERO', equipos: [], partidos: [], titulos: [] }));
+      const deportivo = estado.registroBody
+        ? { alturaCm: null, piernaHabil: null, posicion: null }
+        : { alturaCm: 170, piernaHabil: 'DERECHA', posicion: 'DELANTERO' };
+      return route.fulfill(json({ nombre: 'Ana María Pérez', ...deportivo, equipos: [], partidos: [], titulos: [] }));
     }
     return route.fulfill(json([]));
   });
@@ -135,6 +139,10 @@ test.describe('Entrar a la web con Supabase (spec 0019, móvil, red simulada)', 
     expect(estado.registroBody).toEqual({
       nombres: 'Ana María', apellidos: 'Pérez', tipoDocumento: 'CC', numeroDocumento: '1090123',
     });
+
+    // Spec 0020: sin perfil deportivo entra directo al panel, sin modal de bienvenida.
+    await expect(page.getByRole('heading', { name: 'Unirme a un equipo' })).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 
   test('recuperar la contraseña: pedir enlace → elegir otra → volver al login', async ({ page }) => {
