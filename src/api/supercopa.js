@@ -360,16 +360,16 @@ export function listAlineacionPartido(partidoId, token) {
   });
 }
 
-export function agregarJugadorCancha(partidoId, cedula, equipoTorneoId, token) {
+export function agregarJugadorCancha(partidoId, personaId, equipoTorneoId, token) {
   return requestJson(buildUrl(`/api/supercopa/admin/partidos/${partidoId}/alineacion`), {
     method: 'POST',
     headers: authHeader(token, true),
-    body: JSON.stringify({ cedula, equipoTorneoId }),
+    body: JSON.stringify({ personaId, equipoTorneoId }),
   });
 }
 
-export function quitarJugadorCancha(partidoId, cedula, token) {
-  return requestJson(buildUrl(`/api/supercopa/admin/partidos/${partidoId}/alineacion/${encodeURIComponent(cedula)}`), {
+export function quitarJugadorCancha(partidoId, personaId, token) {
+  return requestJson(buildUrl(`/api/supercopa/admin/partidos/${partidoId}/alineacion/${encodeURIComponent(personaId)}`), {
     method: 'DELETE',
     headers: authHeader(token),
   });

@@ -22,10 +22,8 @@ const PROHIBIDO = [/c[eé]dula/i, /\/api\/jugadores/];
 /** Archivos que todavía faltan por adaptar. Se vacía commit a commit hasta quedar vacía. */
 const PENDIENTES = [
   'src/api/cuentas.js',
-  'src/api/finanzas.js',
   'src/api/jugadores.js',
   'src/api/supercopa.js',
-  'src/hooks/useGestionPartido.js',
   'src/pages/AdminDashboard.jsx',
   'src/pages/JugadorDashboard.jsx',
   'src/pages/admin/ConfigurarTorneoView.jsx',
@@ -37,7 +35,6 @@ const PENDIENTES = [
   'src/pages/admin/usuarios/DeleteUserModal.jsx',
   'src/pages/admin/usuarios/RevokeRoleModal.jsx',
   'src/pages/admin/usuarios/UsersTable.jsx',
-  'src/pages/arbitro/AlineacionTab.jsx',
   'src/pages/delegado/MiEquipoTab.jsx',
   'src/pages/delegado/SolicitudesTab.jsx',
 ];

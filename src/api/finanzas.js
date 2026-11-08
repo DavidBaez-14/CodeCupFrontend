@@ -31,15 +31,15 @@ export function getBolsaMultas(torneoId, token) {
   });
 }
 
-export function getElegibilidadDetalle(cedula, torneoId, token) {
-  return requestJson(buildUrl(`/api/finanzas/multas/elegibilidad/${encodeURIComponent(cedula)}/detalle?torneoId=${torneoId}`), {
+export function getElegibilidadDetalle(personaId, torneoId, token) {
+  return requestJson(buildUrl(`/api/finanzas/multas/elegibilidad/${encodeURIComponent(personaId)}/detalle?torneoId=${torneoId}`), {
     method: 'GET',
     headers: authHeader(token),
   });
 }
 
-export function getMultasPendientesJugador(cedula, torneoId, token) {
-  return requestJson(buildUrl(`/api/finanzas/multas/jugador/${encodeURIComponent(cedula)}/pendientes?torneoId=${torneoId}`), {
+export function getMultasPendientesJugador(personaId, torneoId, token) {
+  return requestJson(buildUrl(`/api/finanzas/multas/jugador/${encodeURIComponent(personaId)}/pendientes?torneoId=${torneoId}`), {
     method: 'GET',
     headers: authHeader(token),
   });
@@ -52,8 +52,8 @@ export function getBloqueadosPartido(partidoId, token) {
   });
 }
 
-export function registrarPagoTodas(cedula, body, token) {
-  return requestJson(buildUrl(`/api/finanzas/multas/jugador/${encodeURIComponent(cedula)}/registrar-pago-todas`), {
+export function registrarPagoTodas(personaId, body, token) {
+  return requestJson(buildUrl(`/api/finanzas/multas/jugador/${encodeURIComponent(personaId)}/registrar-pago-todas`), {
     method: 'POST',
     headers: authHeader(token, true),
     body: JSON.stringify(body),

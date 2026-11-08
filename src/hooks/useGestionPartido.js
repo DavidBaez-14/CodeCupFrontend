@@ -16,28 +16,7 @@ import {
 } from '../api/supercopa';
 import { getBloqueadosPartido, registrarPagoTodas, habilitarExcepcion as apiHabilitarExcepcion } from '../api/finanzas';
 import { getToken } from '../utils/session';
-
-const STATUS_MAP = {
-  PROGRAMADO: 'upcoming',
-  EN_CURSO: 'live',
-  FINALIZADO: 'played',
-  APLAZADO: 'upcoming',
-  WO: 'played',
-  DESCANSO: 'descanso',
-};
-
-const TIPO_TO_LOCAL = {
-  GOL: 'gol',
-  AMARILLA: 'amarilla',
-  AZUL: 'azul',
-  ROJA: 'roja',
-};
-const LOCAL_TO_TIPO = {
-  gol: 'GOL',
-  amarilla: 'AMARILLA',
-  azul: 'AZUL',
-  roja: 'ROJA',
-};
+import { armarPartido, cuerpoEvento } from '../utils/partido';
 
 /**
  * Hook compartido para gestionar un partido individual desde admin o árbitro.
@@ -110,87 +89,11 @@ export default function useGestionPartido(partidoBase) {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // ── Vistas derivadas
-  const match = useMemo(() => {
-    if (!partido) return null;
-
-    // Index cedula → num (asignamos números secuenciales por orden del roster)
-    const buildIdx = (arr) => {
-      const idx = new Map();
-      arr.forEach((m, i) => idx.set(m.cedula, i + 1));
-      return idx;
-    };
-    const homeIdx = buildIdx(roster.home);
-    const awayIdx = buildIdx(roster.away);
-
-    const buildRosterUI = (arr, idxMap) => arr.map((mb) => {
-      const b = bloqueados.find(x => x.cedula === mb.cedula);
-      return {
-        num: idxMap.get(mb.cedula),
-        cedula: mb.cedula,
-        name: mb.nombre || mb.cedula,
-        suspension: b ? b : null,
-      };
-    });
-
-    const homeRoster = buildRosterUI(roster.home, homeIdx);
-    const awayRoster = buildRosterUI(roster.away, awayIdx);
-
-    const onFieldCedulas = new Set(alineacion.filter((a) => a.jugo).map((a) => a.cedula));
-    const onFieldHome = homeRoster.filter((p) => onFieldCedulas.has(p.cedula)).map((p) => p.num);
-    const onFieldAway = awayRoster.filter((p) => onFieldCedulas.has(p.cedula)).map((p) => p.num);
-
-    // Eventos en shape UI
-    const localId = partido.localEquipoTorneoId;
-    const eventsUI = events.map((e) => {
-      const isHome = e.equipoTorneoId === localId;
-      const idxMap = isHome ? homeIdx : awayIdx;
-      const num = e.cedula ? idxMap.get(e.cedula) || null : null;
-      return {
-        id: e.id,
-        type: TIPO_TO_LOCAL[e.tipoEvento] || (e.tipoEvento || '').toLowerCase(),
-        side: isHome ? 'home' : 'away',
-        num,
-        player: e.jugadorNombre || e.cedula || '(WO)',
-        cedula: e.cedula,
-        orden: e.orden,
-      };
-    });
-    const sortedEvents = [...eventsUI].sort((a, b) => (a.orden || 0) - (b.orden || 0));
-
-    // Goles para el marcador
-    const golesHome = sortedEvents.filter((e) => e.type === 'gol' && e.side === 'home').length;
-    const golesAway = sortedEvents.filter((e) => e.type === 'gol' && e.side === 'away').length;
-
-    const fecha = partido.fecha ? new Date(partido.fecha) : null;
-
-    return {
-      id: partido.id,
-      home: partido.localNombre || 'Por definir',
-      away: partido.visitanteNombre || 'Por definir',
-      // El marcador es siempre el cómputo en vivo de los eventos (la BD ya los
-      // tiene). NO usar partido.golesLocal porque ese valor es stale: viene del
-      // padre que solo recarga al cerrar el partido. Para WO existen 3 GOL
-      // dummy events en BD que también cuentan aquí, por lo que el resultado
-      // 3-0 sigue siendo correcto.
-      scoreH: golesHome,
-      scoreA: golesAway,
-      status: STATUS_MAP[partido.estado] || 'upcoming',
-      estado: partido.estado,
-      hora: fecha ? fecha.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : '',
-      date: fecha ? fecha.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }) : '',
-      fecha: partido.jornada || '',
-      grupo: partido.grupo || partido.fase || '',
-      localEquipoTorneoId: partido.localEquipoTorneoId,
-      visitanteEquipoTorneoId: partido.visitanteEquipoTorneoId,
-      homeRoster,
-      awayRoster,
-      onFieldHome,
-      onFieldAway,
-      events: sortedEvents,
-      torneoId: partido.torneoId,
-    };
-  }, [partido, alineacion, events, roster, bloqueados]);
+  // ── Vista derivada (utils/partido.js): todo se cruza por personaId.
+  const match = useMemo(
+    () => armarPartido({ partido, roster, alineacion, eventos: events, bloqueados }),
+    [partido, alineacion, events, roster, bloqueados],
+  );
 
   // ── Acciones
   const refreshAlineacion = useCallback(async () => {
@@ -223,9 +126,9 @@ export default function useGestionPartido(partidoBase) {
     const equipoTorneoId = side === 'home' ? match.localEquipoTorneoId : match.visitanteEquipoTorneoId;
     try {
       if (alreadyOnField) {
-        await quitarJugadorCancha(partidoId, player.cedula, getToken());
+        await quitarJugadorCancha(partidoId, player.personaId, getToken());
       } else {
-        await agregarJugadorCancha(partidoId, player.cedula, equipoTorneoId, getToken());
+        await agregarJugadorCancha(partidoId, player.personaId, equipoTorneoId, getToken());
       }
       await refreshAlineacion();
     } catch (err) {
@@ -256,13 +159,8 @@ export default function useGestionPartido(partidoBase) {
       return;
     }
     const equipoTorneoId = side === 'home' ? match.localEquipoTorneoId : match.visitanteEquipoTorneoId;
-    const payload = {
-      cedula: player.cedula,
-      equipoTorneoId,
-      tipoEvento: LOCAL_TO_TIPO[type] || type.toUpperCase(),
-    };
     try {
-      await crearEvento(partidoId, payload, getToken());
+      await crearEvento(partidoId, cuerpoEvento(player, equipoTorneoId, type), getToken());
       await refreshEvents();
     } catch (err) {
       setError(err?.message || 'No fue posible registrar el evento.');
@@ -334,9 +232,9 @@ export default function useGestionPartido(partidoBase) {
     }
   }, [partidoId, match, loadAll]);
 
-  const registrarPago = useCallback(async (cedula, body) => {
+  const registrarPago = useCallback(async (personaId, body) => {
     try {
-      await registrarPagoTodas(cedula, body, getToken());
+      await registrarPagoTodas(personaId, body, getToken());
       await loadAll();
     } catch (err) {
       setError(err?.message || 'Error registrando pago.');

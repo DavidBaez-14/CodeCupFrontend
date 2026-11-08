@@ -24,7 +24,7 @@ function AlineacionTab({ match, onTogglePlayer, onAddAll, onCloseMatch, onRegist
         onTogglePlayer={onTogglePlayer}
         onAddAll={onAddAll}
         disabled={closed}
-        onRegistrarPago={(cedula, body) => wrapFeedback(() => onRegistrarPago(cedula, body), '✓ PAGO REGISTRADO')}
+        onRegistrarPago={(personaId, body) => wrapFeedback(() => onRegistrarPago(personaId, body), '✓ PAGO REGISTRADO')}
         onHabilitarExcepcion={(multaId, body) => wrapFeedback(() => onHabilitarExcepcion(multaId, body), '✓ Jugador habilitado por excepción')}
       />
       <TeamSection
@@ -33,7 +33,7 @@ function AlineacionTab({ match, onTogglePlayer, onAddAll, onCloseMatch, onRegist
         onTogglePlayer={onTogglePlayer}
         onAddAll={onAddAll}
         disabled={closed}
-        onRegistrarPago={(cedula, body) => wrapFeedback(() => onRegistrarPago(cedula, body), '✓ PAGO REGISTRADO')}
+        onRegistrarPago={(personaId, body) => wrapFeedback(() => onRegistrarPago(personaId, body), '✓ PAGO REGISTRADO')}
         onHabilitarExcepcion={(multaId, body) => wrapFeedback(() => onHabilitarExcepcion(multaId, body), '✓ Jugador habilitado por excepción')}
       />
 
@@ -149,7 +149,7 @@ function PlayerRow({ player: p, onField, onToggle, disabled, onRegistrarPago, on
 
   const handlePago = () => {
     if (window.confirm(`¿Registrar pago de multas pendientes para ${p.name}?`)) {
-      onRegistrarPago(p.cedula, { comprobanteRef: 'Efectivo en campo', verificadoManual: true });
+      onRegistrarPago(p.personaId, { comprobanteRef: 'Efectivo en campo', verificadoManual: true });
     }
   };
 
