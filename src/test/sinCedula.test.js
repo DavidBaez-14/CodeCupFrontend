@@ -22,9 +22,6 @@ const PROHIBIDO = [/c[eé]dula/i, /\/api\/jugadores/];
 /** Archivos que todavía faltan por adaptar. Se vacía commit a commit hasta quedar vacía. */
 const PENDIENTES = [
   'src/pages/JugadorDashboard.jsx',
-  'src/pages/admin/ConfigurarTorneoView.jsx',
-  'src/pages/admin/GestionarEquiposView.jsx',
-  'src/pages/admin/finanzas/MultasActivasView.jsx',
 ];
 
 /** Código de src/ (sin tests ni helpers de test) que todavía nombra la cédula o el padrón. */

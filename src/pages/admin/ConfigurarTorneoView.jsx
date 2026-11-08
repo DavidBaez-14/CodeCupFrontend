@@ -22,6 +22,7 @@ import {
   listMiembrosEquipoTorneoAdmin,
 } from '../../api/supercopa';
 import { getToken } from '../../utils/session';
+import { nombreGanador, premioTieneGanador } from '../../utils/premios';
 import '../../styles/admin-torneo-formato.css';
 import '../../styles/finanzas.css';
 
@@ -1090,13 +1091,13 @@ function ConfiguracionFinanzas({ torneoId, configTorneo, onChanged }) {
     }
   };
 
-  const handleAsignarPremio = async (premioId, cedula) => {
-    if (!cedula) return;
+  const handleAsignarPremio = async (premioId, personaId) => {
+    if (!personaId) return;
     setAssigning(premioId);
     setFeedback('');
     setError('');
     try {
-      await asignarPremio(torneoId, premioId, { cedula }, getToken());
+      await asignarPremio(torneoId, premioId, { personaId }, getToken());
       setFeedback('Premio asignado exitosamente.');
       await loadFinanzas();
     } catch (err) {
@@ -1244,17 +1245,14 @@ function ConfiguracionFinanzas({ torneoId, configTorneo, onChanged }) {
         <div className="fn-premios-list">
           {premios.map(p => {
             const isIndividual = !p.ganadorEquipoNombre;
-            const hasWinner = p.ganadorCedula || p.ganadorEquipoTorneoId;
+            const hasWinner = premioTieneGanador(p);
             const isManualType = p.codigoCatalogo === 'MVP' || p.codigoCatalogo === 'OTRO';
             return (
               <div key={p.id} className="fn-premio-item">
                 <div className="fn-premio-info">
                   <span className="fn-premio-name">{p.codigoCatalogo === 'OTRO' ? (p.titulo || 'Otro') : p.nombreCatalogo}</span>
                   <span className="fn-premio-amount">${p.monto.toLocaleString()}</span>
-                  {p.ganadorEquipoNombre && <span className="fn-premio-winner">🏆 {p.ganadorEquipoNombre} {p.ganadorJugadorNombre ? `(${p.ganadorJugadorNombre})` : ''}</span>}
-                  {p.ganadorCedula && !p.ganadorEquipoNombre && (
-                    <span className="fn-premio-winner">🏆 {p.ganadorJugadorNombre || p.ganadorCedula}</span>
-                  )}
+                  {hasWinner && <span className="fn-premio-winner">🏆 {nombreGanador(p)}</span>}
                   {isFinalizado && !hasWinner && isIndividual && isManualType && (
                     <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
                       <select
@@ -1268,7 +1266,7 @@ function ConfiguracionFinanzas({ torneoId, configTorneo, onChanged }) {
                       >
                         <option value="">Seleccionar jugador...</option>
                         {jugadores.map(j => (
-                          <option key={j.cedula} value={j.cedula}>{j.nombre || j.cedula}</option>
+                          <option key={j.personaId} value={j.personaId}>{j.nombre || j.numeroDocumento || 'Sin nombre'}</option>
                         ))}
                       </select>
                       {assigning === p.id && <span className="muted">Asignando...</span>}

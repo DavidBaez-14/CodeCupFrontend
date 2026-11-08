@@ -120,7 +120,7 @@ function MultasActivasView() {
                         <div>{new Date(m.createdAt).toLocaleDateString()}</div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{m.tipo}</div>
                       </td>
-                      <td>{m.jugadorNombre || m.cedula}</td>
+                      <td>{m.jugadorNombre || 'Sin nombre'}</td>
                       <td>{m.equipoNombre || m.equipoTorneoId}</td>
                       <td className="fn-premio-amount">${m.monto.toLocaleString()}</td>
                       <td>

@@ -203,7 +203,7 @@ function GestionarEquiposView() {
                 {inscripciones.map((insc) => (
                   <tr key={insc.id}>
                     <td>{insc.equipoNombre || '—'}</td>
-                    <td className="mono">{insc.delegadoCedula || '—'}</td>
+                    <td>{insc.delegadoNombre || '—'}</td>
                     <td>
                       <span className={`status-pill estado-${(insc.estadoInscripcion || '').toLowerCase()}`}>
                         {ESTADO_LABEL[insc.estadoInscripcion] || insc.estadoInscripcion}

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('./http', () => ({ requestJson: vi.fn(async () => ({})) }));
 
 import { requestJson } from './http';
-import { actualizarCamiseta, agregarJugadorCancha, quitarJugadorCancha, removerMiembro } from './supercopa';
+import { actualizarCamiseta, agregarJugadorCancha, asignarPremio, quitarJugadorCancha, removerMiembro } from './supercopa';
 import { getElegibilidadDetalle, getMultasPendientesJugador, registrarPagoTodas } from './finanzas';
 import { asignarRol, bloquearCuenta, revocarRol } from './cuentas';
 
@@ -48,6 +48,15 @@ describe('rutas por persona (spec 0027)', () => {
       ruta: `/api/supercopa/delegado/equipo-torneo/et-1/miembros/${PERSONA}/camiseta`,
       opciones: { method: 'PATCH' },
       cuerpo: { numeroCamiseta: 10 },
+    });
+  });
+
+  it('asignarPremioIndividual_mandaLaPersona', async () => {
+    await asignarPremio('torneo-1', 'premio-1', { personaId: PERSONA }, 'tok');
+    expect(ultimaLlamada()).toMatchObject({
+      ruta: '/api/supercopa/admin/torneos/torneo-1/premios/premio-1/asignar',
+      opciones: { method: 'POST' },
+      cuerpo: { personaId: PERSONA },
     });
   });
 
