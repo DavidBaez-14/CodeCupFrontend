@@ -6,7 +6,8 @@ import importPlugin from 'eslint-plugin-import'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // .claude/ guarda worktrees con su propia copia del proyecto: no se lintean desde aquí.
+  globalIgnores(['dist', '.claude']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
