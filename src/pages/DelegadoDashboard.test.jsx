@@ -3,7 +3,6 @@ import { screen } from '@testing-library/react';
 
 vi.mock('../lib/supabase', () => ({ cerrarSesion: vi.fn() }));
 vi.mock('../api/auth', () => ({ me: vi.fn(), solicitarRol: vi.fn() }));
-vi.mock('../api/jugadores', () => ({ getJugadorByCedula: vi.fn() }));
 vi.mock('../api/finanzas', () => ({
   getMisComprobantes: vi.fn(),
   solicitarUploadUrl: vi.fn(),

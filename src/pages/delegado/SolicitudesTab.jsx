@@ -26,6 +26,11 @@ function formatAltura(value) {
   return `${value} cm`;
 }
 
+/** Cómo se nombra a quien pidió unirse en los avisos: su nombre o, si no lo hay, su documento. */
+function quienPide(s) {
+  return s.nombre || s.numeroDocumento || 'el jugador';
+}
+
 function SolicitudesTab({ toast }) {
   const [solicitudes, setSolicitudes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -56,8 +61,8 @@ function SolicitudesTab({ toast }) {
     try {
       await aprobarSolicitud(s.id, getToken());
       setSolicitudes((prev) => prev.filter((x) => x.id !== s.id));
-      toast?.(`Solicitud de ${s.nombre || s.cedula} aprobada`);
-      setFeedback(`Solicitud de ${s.nombre || s.cedula} aprobada.`);
+      toast?.(`Solicitud de ${quienPide(s)} aprobada`);
+      setFeedback(`Solicitud de ${quienPide(s)} aprobada.`);
     } catch (err) {
       setError(err?.message || 'No fue posible aprobar la solicitud.');
     } finally {
@@ -66,7 +71,7 @@ function SolicitudesTab({ toast }) {
   };
 
   const openRechazo = (s) => {
-    setRechazo({ open: true, id: s.id, nombre: s.nombre || s.cedula, motivo: '' });
+    setRechazo({ open: true, id: s.id, nombre: quienPide(s), motivo: '' });
   };
 
   const confirmarRechazo = async () => {
@@ -122,7 +127,7 @@ function SolicitudesTab({ toast }) {
               <thead>
                 <tr>
                   <th>Jugador</th>
-                  <th>Cédula</th>
+                  <th>Documento</th>
                   <th>Posición</th>
                   <th>Pierna hábil</th>
                   <th>Altura</th>
@@ -136,7 +141,7 @@ function SolicitudesTab({ toast }) {
                 {solicitudes.map((s) => (
                   <tr key={s.id}>
                     <td>{s.nombre || '—'}</td>
-                    <td className="mono">{s.cedula || '—'}</td>
+                    <td className="mono">{s.numeroDocumento || 'Sin documento'}</td>
                     <td>{formatLabel(s.posicion)}</td>
                     <td>{formatLabel(s.piernaHabil)}</td>
                     <td>{formatAltura(s.alturaCm)}</td>

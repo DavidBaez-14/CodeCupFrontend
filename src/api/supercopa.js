@@ -331,16 +331,16 @@ export function agregarMiembro(equipoTorneoId, payload, token) {
   );
 }
 
-export function removerMiembro(equipoTorneoId, cedula, token) {
+export function removerMiembro(equipoTorneoId, personaId, token) {
   return requestJson(
-    buildUrl(`/api/supercopa/delegado/equipo-torneo/${equipoTorneoId}/miembros/${encodeURIComponent(cedula)}/remover`),
+    buildUrl(`/api/supercopa/delegado/equipo-torneo/${equipoTorneoId}/miembros/${encodeURIComponent(personaId)}/remover`),
     { method: 'POST', headers: authHeader(token) },
   );
 }
 
-export function actualizarCamiseta(equipoTorneoId, cedula, numeroCamiseta, token) {
+export function actualizarCamiseta(equipoTorneoId, personaId, numeroCamiseta, token) {
   return requestJson(
-    buildUrl(`/api/supercopa/delegado/equipo-torneo/${equipoTorneoId}/miembros/${encodeURIComponent(cedula)}/camiseta`),
+    buildUrl(`/api/supercopa/delegado/equipo-torneo/${equipoTorneoId}/miembros/${encodeURIComponent(personaId)}/camiseta`),
     {
       method: 'PATCH',
       headers: authHeader(token, true),

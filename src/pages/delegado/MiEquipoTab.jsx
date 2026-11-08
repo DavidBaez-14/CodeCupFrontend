@@ -8,8 +8,10 @@ import {
   listMiembrosEquipoTorneo,
   removerMiembro,
 } from '../../api/supercopa';
-import { getJugadorByCedula } from '../../api/jugadores';
+import { TIPOS_DOCUMENTO } from '../../constants/documento';
 import { getToken } from '../../utils/session';
+
+const MIEMBRO_VACIO = { tipoDocumento: 'CC', numeroDocumento: '', nombre: '', numeroCamiseta: '' };
 
 function MiEquipoTab({ onEquipoCreado, toast }) {
   const [equipo, setEquipo] = useState(null);
@@ -24,11 +26,8 @@ function MiEquipoTab({ onEquipoCreado, toast }) {
   const [miembros, setMiembros] = useState([]);
   const [actioningId, setActioningId] = useState(null);
 
-  const [cedulaBuscar, setCedulaBuscar] = useState('');
-  const [jugadorEncontrado, setJugadorEncontrado] = useState(null);
-  const [errorVerif, setErrorVerif] = useState('');
-  const [buscando, setBuscando] = useState(false);
-  const [numeroCamiseta, setNumeroCamiseta] = useState('');
+  const [nuevo, setNuevo] = useState(MIEMBRO_VACIO);
+  const [errorAgregar, setErrorAgregar] = useState('');
   const [agregando, setAgregando] = useState(false);
 
   const [remover, setRemover] = useState({ open: false, miembro: null });
@@ -92,40 +91,35 @@ function MiEquipoTab({ onEquipoCreado, toast }) {
     }
   };
 
-  const handleVerificar = async (e) => {
+  // Spec 0018 (W1) y 0027: se agrega con documento y nombre, sin búsqueda previa. Si la persona
+  // no tiene cuenta, el backend la crea sin cuenta; si su cuenta está bloqueada, responde
+  // JUGADOR_BLOQUEADO y se muestra su mensaje.
+  const handleAgregar = async (e) => {
     e.preventDefault();
-    if (!cedulaBuscar.trim()) return;
-    setBuscando(true);
-    setErrorVerif('');
-    setJugadorEncontrado(null);
-    try {
-      const j = await getJugadorByCedula(cedulaBuscar.trim(), getToken());
-      setJugadorEncontrado(j);
-    } catch (err) {
-      setErrorVerif(err?.message || 'No se encontró el jugador.');
-    } finally {
-      setBuscando(false);
+    const numeroDocumento = nuevo.numeroDocumento.trim();
+    const nombre = nuevo.nombre.trim();
+    if (!numeroDocumento || !nombre) {
+      setErrorAgregar('Escribe el número de documento y el nombre completo.');
+      return;
     }
-  };
-
-  const handleAgregarJugador = async () => {
-    if (!jugadorEncontrado) return;
     setAgregando(true);
+    setErrorAgregar('');
     setError('');
     setFeedback('');
     try {
-      await agregarMiembro(inscActiva, {
-        cedula: jugadorEncontrado.cedula,
-        numeroCamiseta: numeroCamiseta ? parseInt(numeroCamiseta, 10) : null,
+      const miembro = await agregarMiembro(inscActiva, {
+        tipoDocumento: nuevo.tipoDocumento,
+        numeroDocumento,
+        nombre,
+        numeroCamiseta: nuevo.numeroCamiseta ? parseInt(nuevo.numeroCamiseta, 10) : null,
       }, getToken());
-      toast?.(`${jugadorEncontrado.nombre} agregado al plantel`);
-      setFeedback(`${jugadorEncontrado.nombre} agregado al plantel.`);
-      setJugadorEncontrado(null);
-      setCedulaBuscar('');
-      setNumeroCamiseta('');
+      const quien = miembro?.nombre || nombre;
+      toast?.(`${quien} agregado al plantel`);
+      setFeedback(`${quien} agregado al plantel.`);
+      setNuevo(MIEMBRO_VACIO);
       await loadMiembros();
     } catch (err) {
-      setError(err?.message);
+      setErrorAgregar(err?.message || 'No fue posible agregar al jugador.');
     } finally {
       setAgregando(false);
     }
@@ -134,11 +128,11 @@ function MiEquipoTab({ onEquipoCreado, toast }) {
   const confirmarRemover = async () => {
     const miembro = remover.miembro;
     if (!miembro) return;
-    setActioningId(miembro.cedula);
+    setActioningId(miembro.personaId);
     setError('');
     setFeedback('');
     try {
-      await removerMiembro(inscActiva, miembro.cedula, getToken());
+      await removerMiembro(inscActiva, miembro.personaId, getToken());
       toast?.(`${miembro.nombre} eliminado del plantel`);
       setFeedback(`${miembro.nombre} eliminado del plantel.`);
       setRemover({ open: false, miembro: null });
@@ -150,12 +144,12 @@ function MiEquipoTab({ onEquipoCreado, toast }) {
     }
   };
 
-  const handleGuardarCamiseta = async (cedula) => {
+  const handleGuardarCamiseta = async (personaId) => {
     setError('');
     setFeedback('');
     try {
       const num = nuevoNumero ? parseInt(nuevoNumero, 10) : null;
-      await actualizarCamiseta(inscActiva, cedula, num, getToken());
+      await actualizarCamiseta(inscActiva, personaId, num, getToken());
       toast?.('Número de camiseta actualizado');
       setFeedback('Número de camiseta actualizado.');
       setEditandoCamiseta(null);
@@ -253,15 +247,15 @@ function MiEquipoTab({ onEquipoCreado, toast }) {
             <ul className="dg-players-grid">
               {activos.map((m) => (
                 <PlayerRow
-                  key={m.cedula}
+                  key={m.personaId}
                   miembro={m}
                   editandoCamiseta={editandoCamiseta}
                   nuevoNumero={nuevoNumero}
                   actioningId={actioningId}
-                  onStartEdit={() => { setEditandoCamiseta(m.cedula); setNuevoNumero(m.numeroCamiseta || ''); }}
+                  onStartEdit={() => { setEditandoCamiseta(m.personaId); setNuevoNumero(m.numeroCamiseta || ''); }}
                   onCancelEdit={() => setEditandoCamiseta(null)}
                   onNumeroChange={setNuevoNumero}
-                  onGuardarCamiseta={() => handleGuardarCamiseta(m.cedula)}
+                  onGuardarCamiseta={() => handleGuardarCamiseta(m.personaId)}
                   onRemover={() => setRemover({ open: true, miembro: m })}
                 />
               ))}
@@ -273,49 +267,67 @@ function MiEquipoTab({ onEquipoCreado, toast }) {
             <article className="ds-panel" style={{ marginTop: 24, marginBottom: 0 }}>
               <header className="panel-header">
                 <h2>Agregar jugador</h2>
-                <p>Busca por cédula y agrégalo directamente al plantel.</p>
+                <p>Escribe su documento y su nombre completo. Si todavía no tiene cuenta, entra al plantel como «Sin cuenta».</p>
               </header>
-              <form className="dg-add-player-form" onSubmit={handleVerificar}>
-                <input
-                  className="dg-add-player-input"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Cédula del jugador"
-                  value={cedulaBuscar}
-                  onChange={(e) => setCedulaBuscar(e.target.value)}
-                  required
-                />
-                <button type="submit" className="dg-add-player-btn" disabled={buscando}>
-                  {buscando ? 'Buscando…' : 'Buscar'}
-                </button>
-              </form>
-              {errorVerif && <p className="banner banner-error">{errorVerif}</p>}
-              {jugadorEncontrado && (
-                <div className="ds-panel" style={{ padding: '12px 0', border: 'none', background: 'transparent' }}>
-                  <div className="player-card" style={{ marginBottom: 12 }}>
-                    <h3 className="player-name">{jugadorEncontrado.nombre || '—'}</h3>
-                    <dl className="player-grid">
-                      <div><dt>Cédula</dt><dd className="mono">{jugadorEncontrado.cedula || '—'}</dd></div>
-                      <div><dt>Semestre</dt><dd>{jugadorEncontrado.semestre ?? '—'}</dd></div>
-                      <div><dt>Rol</dt><dd>{jugadorEncontrado.rolJugador || '—'}</dd></div>
-                    </dl>
+              <form onSubmit={handleAgregar} noValidate>
+                <div className="dg-form-grid">
+                  <div className="dg-form-field">
+                    <label className="dg-form-label" htmlFor="miembro-tipo">Tipo de documento</label>
+                    <select
+                      id="miembro-tipo"
+                      className="dg-form-select"
+                      value={nuevo.tipoDocumento}
+                      onChange={(e) => setNuevo((p) => ({ ...p, tipoDocumento: e.target.value }))}
+                    >
+                      {TIPOS_DOCUMENTO.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="inline-search">
+                  <div className="dg-form-field">
+                    <label className="dg-form-label" htmlFor="miembro-documento">Número de documento</label>
                     <input
-                      className="form-input"
-                      type="number"
-                      min={1} max={99}
-                      placeholder="N° camiseta (opcional)"
-                      value={numeroCamiseta}
-                      onChange={(e) => setNumeroCamiseta(e.target.value)}
-                      style={{ maxWidth: 200 }}
+                      id="miembro-documento"
+                      className="dg-form-input"
+                      type="text"
+                      autoComplete="off"
+                      maxLength={20}
+                      required
+                      value={nuevo.numeroDocumento}
+                      onChange={(e) => setNuevo((p) => ({ ...p, numeroDocumento: e.target.value }))}
                     />
-                    <button className="action-button primary" onClick={handleAgregarJugador} disabled={agregando}>
-                      {agregando ? 'Agregando…' : 'Agregar al plantel'}
-                    </button>
+                  </div>
+                  <div className="dg-form-field">
+                    <label className="dg-form-label" htmlFor="miembro-nombre">Nombre completo</label>
+                    <input
+                      id="miembro-nombre"
+                      className="dg-form-input"
+                      type="text"
+                      autoComplete="off"
+                      maxLength={150}
+                      required
+                      value={nuevo.nombre}
+                      onChange={(e) => setNuevo((p) => ({ ...p, nombre: e.target.value }))}
+                    />
+                  </div>
+                  <div className="dg-form-field">
+                    <label className="dg-form-label" htmlFor="miembro-camiseta">Camiseta (opcional)</label>
+                    <input
+                      id="miembro-camiseta"
+                      className="dg-form-input"
+                      type="number"
+                      min={1}
+                      max={99}
+                      value={nuevo.numeroCamiseta}
+                      onChange={(e) => setNuevo((p) => ({ ...p, numeroCamiseta: e.target.value }))}
+                    />
                   </div>
                 </div>
-              )}
+                {errorAgregar && <p className="banner banner-error" role="alert" style={{ marginTop: 14 }}>{errorAgregar}</p>}
+                <button type="submit" className="dg-form-submit" disabled={agregando}>
+                  {agregando ? 'Agregando…' : 'Agregar al plantel'}
+                </button>
+              </form>
             </article>
           )}
         </>
@@ -363,19 +375,20 @@ function PlayerRow({ miembro: m, editandoCamiseta, nuevoNumero, actioningId, onS
       <div className="dg-player-num">{m.numeroCamiseta ?? '?'}</div>
       <div className="dg-player-details">
         <div className="dg-player-name-row">
-          {m.nombre || m.cedula}
+          {m.nombre || 'Sin nombre'}
           {m.esDelegado && <span className="dg-player-captain-tag">Capitán</span>}
+          {m.tieneCuenta === false && <span className="dg-player-sin-cuenta-tag">Sin cuenta</span>}
         </div>
         <div className="dg-player-sub">
           <span>{m.posicion || '—'}</span>
           <span className="dg-dot" />
-          <span className="mono">{m.cedula}</span>
+          <span className="mono">{m.numeroDocumento || 'Sin documento'}</span>
           {m.alturaCm && (<><span className="dg-dot" /><span>{m.alturaCm} cm</span></>)}
           {m.piernaHabil && (<><span className="dg-dot" /><span>{m.piernaHabil}</span></>)}
         </div>
       </div>
       <div className="dg-player-cards">
-        {editandoCamiseta === m.cedula ? (
+        {editandoCamiseta === m.personaId ? (
           <form className="camiseta-inline-form" onSubmit={(e) => { e.preventDefault(); onGuardarCamiseta(); }}>
             <input
               className="form-input"
@@ -395,7 +408,7 @@ function PlayerRow({ miembro: m, editandoCamiseta, nuevoNumero, actioningId, onS
       </div>
       <div className="dg-player-actions">
         {!m.esDelegado && (
-          <button type="button" className="dg-btn-icon danger" onClick={onRemover} title="Eliminar" disabled={actioningId === m.cedula}>
+          <button type="button" className="dg-btn-icon danger" onClick={onRemover} title="Eliminar" disabled={actioningId === m.personaId}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="3 6 5 6 21 6" />
               <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />

@@ -494,6 +494,15 @@
   background: rgba(250, 204, 21, 0.12);
   padding: 2px 6px; border-radius: 3px;
 }
+/* Miembro que el delegado agregó y todavía no tiene cuenta (spec 0018, W2). */
+.dg-player-sin-cuenta-tag {
+  font-family: var(--font-ui);
+  font-size: 8px; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px; border-radius: 3px;
+}
 .dg-player-sub {
   font-family: var(--font-body);
   font-size: 11px;

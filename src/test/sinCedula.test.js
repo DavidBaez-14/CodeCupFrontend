@@ -23,7 +23,6 @@ const PROHIBIDO = [/c[eé]dula/i, /\/api\/jugadores/];
 const PENDIENTES = [
   'src/api/cuentas.js',
   'src/api/jugadores.js',
-  'src/api/supercopa.js',
   'src/pages/AdminDashboard.jsx',
   'src/pages/JugadorDashboard.jsx',
   'src/pages/admin/ConfigurarTorneoView.jsx',
@@ -35,8 +34,6 @@ const PENDIENTES = [
   'src/pages/admin/usuarios/DeleteUserModal.jsx',
   'src/pages/admin/usuarios/RevokeRoleModal.jsx',
   'src/pages/admin/usuarios/UsersTable.jsx',
-  'src/pages/delegado/MiEquipoTab.jsx',
-  'src/pages/delegado/SolicitudesTab.jsx',
 ];
 
 /** Código de src/ (sin tests ni helpers de test) que todavía nombra la cédula o el padrón. */

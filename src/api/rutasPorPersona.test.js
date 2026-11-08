@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('./http', () => ({ requestJson: vi.fn(async () => ({})) }));
 
 import { requestJson } from './http';
-import { agregarJugadorCancha, quitarJugadorCancha } from './supercopa';
+import { actualizarCamiseta, agregarJugadorCancha, quitarJugadorCancha, removerMiembro } from './supercopa';
 import { getElegibilidadDetalle, getMultasPendientesJugador, registrarPagoTodas } from './finanzas';
 
 const PERSONA = '7edf4b7a-871e-4350-9433-28e42d907390';
@@ -32,6 +32,21 @@ describe('rutas por persona (spec 0027)', () => {
     expect(ultimaLlamada()).toMatchObject({
       ruta: `/api/supercopa/admin/partidos/${PARTIDO}/alineacion/${PERSONA}`,
       opciones: { method: 'DELETE' },
+    });
+  });
+
+  it('plantel_quitarYCamiseta', async () => {
+    await removerMiembro('et-1', PERSONA, 'tok');
+    expect(ultimaLlamada()).toMatchObject({
+      ruta: `/api/supercopa/delegado/equipo-torneo/et-1/miembros/${PERSONA}/remover`,
+      opciones: { method: 'POST' },
+    });
+
+    await actualizarCamiseta('et-1', PERSONA, 10, 'tok');
+    expect(ultimaLlamada()).toMatchObject({
+      ruta: `/api/supercopa/delegado/equipo-torneo/et-1/miembros/${PERSONA}/camiseta`,
+      opciones: { method: 'PATCH' },
+      cuerpo: { numeroCamiseta: 10 },
     });
   });
 

@@ -10,15 +10,8 @@ import {
   guardarSesionDesdeMe,
   normalizeRole,
 } from '../utils/session';
+import { TIPOS_DOCUMENTO } from '../constants/documento';
 import '../styles/login.css';
-
-const TIPOS_DOCUMENTO = [
-  { value: 'CC', label: 'Cédula de ciudadanía' },
-  { value: 'TI', label: 'Tarjeta de identidad' },
-  { value: 'CE', label: 'Cédula de extranjería' },
-  { value: 'PPT', label: 'Permiso por protección temporal' },
-  { value: 'PASAPORTE', label: 'Pasaporte' },
-];
 
 const TIPOS_CUENTA = [
   { value: 'JUGADOR', label: 'Jugador' },
