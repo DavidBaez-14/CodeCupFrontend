@@ -504,6 +504,12 @@
   color: #fecaca;
   border-left: 3px solid var(--color-error);
 }
+/* Aviso informativo: algo está en curso y no requiere acción (p. ej., un vínculo por aprobar). */
+.banner-info {
+  background: var(--color-accent-subtle);
+  color: var(--blue-100);
+  border-left: 3px solid var(--color-info);
+}
 .banner-danger {
   background: rgba(127, 29, 29, 0.28);
   color: #fecaca;

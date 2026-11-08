@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import brandLogo from '../assets/soccer-ball-sci-fi-192.png';
 import RoleHeaderActions from '../components/RoleHeaderActions';
+import { me } from '../api/auth';
 import {
   actualizarMiPerfil,
   getMiPerfil,
@@ -28,6 +29,13 @@ const TABS = [
   { id: 'equipo', label: 'Equipo' },
   { id: 'perfil', label: 'Perfil' },
 ];
+
+/** Documento de la propia persona, tal como lo da /api/auth/me (spec 0027). */
+function documentoDe(cuenta) {
+  if (cuenta === undefined) return '—';
+  if (!cuenta?.numeroDocumento) return 'Sin documento';
+  return [cuenta.tipoDocumento, cuenta.numeroDocumento].filter(Boolean).join(' ');
+}
 
 function JugadorDashboard() {
   const navigate = useNavigate();
@@ -58,6 +66,18 @@ function JugadorDashboard() {
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
   const [perfilMsg, setPerfilMsg] = useState('');
   const [perfilErrorEdit, setPerfilErrorEdit] = useState('');
+
+  // Cuenta (/api/auth/me): documento y vínculo pendiente. undefined = cargando, null = no se pudo leer.
+  // Se pide al abrir el panel para que el aviso del vínculo desaparezca cuando lo aprueben.
+  const [cuenta, setCuenta] = useState(undefined);
+
+  useEffect(() => {
+    let alive = true;
+    me(token)
+      .then((datos) => { if (alive) setCuenta(datos || null); })
+      .catch(() => { if (alive) setCuenta(null); });
+    return () => { alive = false; };
+  }, [token]);
 
   const handleLogout = async () => {
     await cerrarSesion();
@@ -210,6 +230,14 @@ function JugadorDashboard() {
       </header>
 
       <section className="role-content jugador-content">
+        {/* Spec 0023 (D1): quien se registra con el documento de un miembro sin cuenta espera la aprobación. */}
+        {cuenta?.vinculoPendiente?.estado === 'PENDIENTE' && (
+          <p className="banner banner-info" role="status" style={{ marginBottom: 16 }}>
+            Tu documento ya estaba en el plantel de un equipo. Cuando el delegado o un admin lo confirme,
+            verás ese historial en tu perfil.
+          </p>
+        )}
+
         {activeTab === 'equipo' && (
           <article className="ds-panel">
             <header className="panel-header">
@@ -368,7 +396,7 @@ function JugadorDashboard() {
                 <div className="perfil-summary">
                   <div>
                     <h3>{perfil.nombre || nombre}</h3>
-                    <p className="mono">{perfil.cedula || '—'}</p>
+                    <p className="mono">{documentoDe(cuenta)}</p>
                   </div>
                   <div className="perfil-metric">
                     <span>Partidos</span>

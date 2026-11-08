@@ -19,11 +19,6 @@ function archivosDe(dir) {
 const PERMITIDO = /C[ée]dula de (ciudadan|extranjer)|codecup_cedula/gi;
 const PROHIBIDO = [/c[eé]dula/i, /\/api\/jugadores/];
 
-/** Archivos que todavía faltan por adaptar. Se vacía commit a commit hasta quedar vacía. */
-const PENDIENTES = [
-  'src/pages/JugadorDashboard.jsx',
-];
-
 /** Código de src/ (sin tests ni helpers de test) que todavía nombra la cédula o el padrón. */
 function archivosConCedula() {
   return archivosDe(join(raiz, 'src'))
@@ -38,12 +33,7 @@ function archivosConCedula() {
 }
 
 describe('sin cédula (spec 0027)', () => {
-  it('ningunArchivoNuevoUsaLaCedulaNiElPadron', () => {
-    expect(archivosConCedula().filter((f) => !PENDIENTES.includes(f))).toEqual([]);
-  });
-
-  it('laListaDePendientesSoloTieneArchivosSinAdaptar', () => {
-    const conCedula = new Set(archivosConCedula());
-    expect(PENDIENTES.filter((f) => !conCedula.has(f))).toEqual([]);
+  it('ningunArchivoUsaLaCedulaNiElPadron', () => {
+    expect(archivosConCedula()).toEqual([]);
   });
 });

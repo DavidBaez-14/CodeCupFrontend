@@ -24,9 +24,11 @@ import {
   solicitarIngreso,
 } from '../api/supercopa';
 import { renderEnRuta } from '../test/rutas';
+import meJugador from '../test/contrato/me-jugador.json';
+import perfilJugador from '../test/contrato/perfil-jugador.json';
 
 const PERFIL_VACIO = {
-  cedula: '9000000322',
+  personaId: 'a4000000-0000-4000-8000-000000000022',
   nombre: 'Jugador Veintidós',
   alturaCm: null,
   piernaHabil: null,
@@ -135,5 +137,56 @@ describe('JugadorDashboard sin modal de perfil (spec 0020)', () => {
 
     expect(await screen.findByText('Altura debe estar entre 100 y 250 cm.')).toBeInTheDocument();
     expect(actualizarMiPerfil).not.toHaveBeenCalled();
+  });
+});
+
+// Spec 0027, criterios 15 y 16: el documento sale de /me (el perfil ya no lo trae) y se avisa del vínculo pendiente.
+describe('JugadorDashboard por persona (spec 0027)', () => {
+  const AVISO = /Tu documento ya estaba en el plantel de un equipo/;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.setItem('codecup_token', 'tok');
+    localStorage.setItem('codecup_rol', 'JUGADOR');
+    me.mockResolvedValue(meJugador);
+    getMiPerfil.mockResolvedValue(perfilJugador);
+    getMisSolicitudes.mockResolvedValue([]);
+    listTorneos.mockResolvedValue([]);
+    listEquiposPorTorneo.mockResolvedValue([]);
+  });
+
+  it('perfil_muestraElDocumentoDeMe', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    await abrirPerfil(user);
+
+    expect(await screen.findByText(`CC ${meJugador.numeroDocumento}`)).toBeInTheDocument();
+  });
+
+  it('sinDocumento_loDice', async () => {
+    me.mockResolvedValue({ ...meJugador, tipoDocumento: null, numeroDocumento: null });
+    const user = userEvent.setup();
+    renderPanel();
+    await abrirPerfil(user);
+
+    expect(await screen.findByText('Sin documento')).toBeInTheDocument();
+  });
+
+  it('vinculoPendiente_muestraElAviso', async () => {
+    me.mockResolvedValue({
+      ...meJugador,
+      vinculoPendiente: { id: 'v-1', personaId: 'p-historial', estado: 'PENDIENTE', creadoEn: '2026-11-08T10:00:00' },
+    });
+    renderPanel();
+
+    expect(await screen.findByRole('status')).toHaveTextContent(AVISO);
+  });
+
+  it('sinVinculo_noHayAviso', async () => {
+    renderPanel();
+
+    await screen.findByRole('heading', { name: 'Unirme a un equipo' });
+    await waitFor(() => expect(me).toHaveBeenCalled());
+    expect(screen.queryByText(AVISO)).not.toBeInTheDocument();
   });
 });
