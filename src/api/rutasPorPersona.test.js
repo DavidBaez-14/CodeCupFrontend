@@ -5,6 +5,7 @@ vi.mock('./http', () => ({ requestJson: vi.fn(async () => ({})) }));
 import { requestJson } from './http';
 import { actualizarCamiseta, agregarJugadorCancha, quitarJugadorCancha, removerMiembro } from './supercopa';
 import { getElegibilidadDetalle, getMultasPendientesJugador, registrarPagoTodas } from './finanzas';
+import { asignarRol, bloquearCuenta, revocarRol } from './cuentas';
 
 const PERSONA = '7edf4b7a-871e-4350-9433-28e42d907390';
 const PARTIDO = '7cbf1204-40db-46b4-a17d-3fc96cc22169';
@@ -47,6 +48,23 @@ describe('rutas por persona (spec 0027)', () => {
       ruta: `/api/supercopa/delegado/equipo-torneo/et-1/miembros/${PERSONA}/camiseta`,
       opciones: { method: 'PATCH' },
       cuerpo: { numeroCamiseta: 10 },
+    });
+  });
+
+  it('panelDeCuentas_vaPorCuentaId', async () => {
+    const CUENTA = '9960b02f-b6ba-48d7-8da9-771ca2098e4f';
+
+    await asignarRol({ cuentaId: CUENTA, rol: 'ARBITRO', motivo: 'm' }, 'tok');
+    expect(ultimaLlamada()).toMatchObject({ ruta: '/api/admin/roles/asignar', cuerpo: { cuentaId: CUENTA, rol: 'ARBITRO', motivo: 'm' } });
+
+    await revocarRol({ cuentaId: CUENTA, rol: 'ARBITRO', motivo: 'm' }, 'tok');
+    expect(ultimaLlamada()).toMatchObject({ ruta: '/api/admin/roles/revocar', cuerpo: { cuentaId: CUENTA, rol: 'ARBITRO' } });
+
+    await bloquearCuenta({ cuentaId: CUENTA, motivo: 'conducta' }, 'tok');
+    expect(ultimaLlamada()).toMatchObject({
+      ruta: `/api/admin/roles/cuenta/${CUENTA}`,
+      opciones: { method: 'DELETE' },
+      cuerpo: { motivo: 'conducta' },
     });
   });
 

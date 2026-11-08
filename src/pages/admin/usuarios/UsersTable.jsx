@@ -129,7 +129,7 @@ function UsersTable({
   onAssign,
   onAssignAdmin,
   onRevoke,
-  onDelete,
+  onBloquear,
 }) {
   const from = totalElements === 0 ? 0 : page * pageSize + 1;
   const to = Math.min(totalElements, (page + 1) * pageSize);
@@ -148,7 +148,7 @@ function UsersTable({
             <tr>
               <th>Nombre</th>
               <th>Correo</th>
-              <th>Cédula</th>
+              <th>Documento</th>
               <th>Roles</th>
               <th>Creado</th>
               <th style={{ textAlign: 'right' }}>Acciones</th>
@@ -165,31 +165,45 @@ function UsersTable({
                 <td colSpan={6} className="usuarios-empty">No hay cuentas que coincidan con el filtro.</td>
               </tr>
             )}
-            {!loading && cuentas.map((c) => (
-              <tr key={c.id}>
-                <td className="col-name">
-                  {c.nombre || '—'}
-                  <span className="u-meta">{c.correo || ''}</span>
-                </td>
-                <td>{c.correo || '—'}</td>
-                <td className="col-mono">{c.cedula || '—'}</td>
-                <td><RoleChips roles={c.roles} /></td>
-                <td className="col-date">{formatFecha(c.fechaCreacion)}</td>
-                <td>
-                  <div className="row-actions">
-                    <RolesMenu
-                      cuenta={c}
-                      onAssign={onAssign}
-                      onAssignAdmin={onAssignAdmin}
-                      onRevoke={onRevoke}
-                    />
-                    <button type="button" className="btn-row danger" onClick={() => onDelete(c)}>
-                      Eliminar
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {!loading && cuentas.map((c) => {
+              // Bloquear le quita los roles: en vez de "Sin roles" se dice que está bloqueada.
+              const bloqueada = c.estado === 'BLOQUEADA';
+              return (
+                <tr key={c.id}>
+                  <td className="col-name">
+                    {c.nombre || '—'}
+                    <span className="u-meta">{c.correo || ''}</span>
+                  </td>
+                  <td>{c.correo || '—'}</td>
+                  <td className="col-mono">{c.numeroDocumento || 'Sin documento'}</td>
+                  <td>
+                    {bloqueada ? (
+                      <span className="role-chip bloqueada"><span className="role-chip-dot" />Bloqueada</span>
+                    ) : (
+                      <RoleChips roles={c.roles} />
+                    )}
+                  </td>
+                  <td className="col-date">{formatFecha(c.fechaCreacion)}</td>
+                  <td>
+                    {bloqueada ? (
+                      <span className="u-meta">Conserva su historial</span>
+                    ) : (
+                      <div className="row-actions">
+                        <RolesMenu
+                          cuenta={c}
+                          onAssign={onAssign}
+                          onAssignAdmin={onAssignAdmin}
+                          onRevoke={onRevoke}
+                        />
+                        <button type="button" className="btn-row danger" onClick={() => onBloquear(c)}>
+                          Bloquear
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

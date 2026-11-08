@@ -30,7 +30,7 @@ function RevokeRoleModal({ open, cuenta, rol, onClose, onSubmit }) {
     }
     setSubmitting(true);
     try {
-      await onSubmit({ cedula: cuenta.cedula, rol, motivo: motivo.trim() });
+      await onSubmit({ cuentaId: cuenta.id, rol, motivo: motivo.trim() });
       onClose();
     } catch (err) {
       setError(err?.message || 'No fue posible revocar el rol.');

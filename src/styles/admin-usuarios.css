@@ -186,6 +186,12 @@
   border: 1px solid rgba(255,85,0,0.4);
   box-shadow: 0 0 8px rgba(255,85,0,0.18);
 }
+/* Cuenta bloqueada (spec 0018, W3): no tiene roles, pero sí historial. */
+.role-chip.bloqueada {
+  background: rgba(239,68,68,0.12);
+  color: var(--color-error);
+  border: 1px solid rgba(239,68,68,0.35);
+}
 .role-chip.pending {
   background: rgba(255,255,255,0.04);
   color: rgba(255,255,255,0.55);

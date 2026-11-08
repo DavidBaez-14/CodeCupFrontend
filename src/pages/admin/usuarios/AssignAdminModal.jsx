@@ -28,7 +28,7 @@ function AssignAdminModal({ open, cuenta, onClose, onSubmit }) {
     if (!confirmed) return;
     setSubmitting(true);
     try {
-      await onSubmit({ cedula: cuenta.cedula, rol: 'ADMINISTRADOR', motivo: motivo.trim() });
+      await onSubmit({ cuentaId: cuenta.id, rol: 'ADMINISTRADOR', motivo: motivo.trim() });
       onClose();
     } catch (err) {
       setError(err?.message || 'No fue posible otorgar el rol.');

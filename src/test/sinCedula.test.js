@@ -21,19 +21,10 @@ const PROHIBIDO = [/c[eé]dula/i, /\/api\/jugadores/];
 
 /** Archivos que todavía faltan por adaptar. Se vacía commit a commit hasta quedar vacía. */
 const PENDIENTES = [
-  'src/api/cuentas.js',
-  'src/api/jugadores.js',
-  'src/pages/AdminDashboard.jsx',
   'src/pages/JugadorDashboard.jsx',
   'src/pages/admin/ConfigurarTorneoView.jsx',
   'src/pages/admin/GestionarEquiposView.jsx',
-  'src/pages/admin/UsuariosView.jsx',
   'src/pages/admin/finanzas/MultasActivasView.jsx',
-  'src/pages/admin/usuarios/AssignAdminModal.jsx',
-  'src/pages/admin/usuarios/AssignRoleModal.jsx',
-  'src/pages/admin/usuarios/DeleteUserModal.jsx',
-  'src/pages/admin/usuarios/RevokeRoleModal.jsx',
-  'src/pages/admin/usuarios/UsersTable.jsx',
 ];
 
 /** Código de src/ (sin tests ni helpers de test) que todavía nombra la cédula o el padrón. */

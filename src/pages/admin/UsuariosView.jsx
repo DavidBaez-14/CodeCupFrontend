@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getToken } from '../../utils/session';
 import {
   asignarRol,
-  eliminarCuenta,
+  bloquearCuenta,
   listarCuentas,
   revocarRol,
 } from '../../api/cuentas';
@@ -11,7 +11,7 @@ import InvitarUsuarioModal from './usuarios/InvitarUsuarioModal';
 import AssignRoleModal from './usuarios/AssignRoleModal';
 import AssignAdminModal from './usuarios/AssignAdminModal';
 import RevokeRoleModal from './usuarios/RevokeRoleModal';
-import DeleteUserModal from './usuarios/DeleteUserModal';
+import BloquearCuentaModal from './usuarios/BloquearCuentaModal';
 import Toast from './usuarios/Toast';
 import '../../styles/admin-usuarios.css';
 
@@ -30,7 +30,7 @@ function UsuariosView() {
   const [modalAssign, setModalAssign] = useState({ open: false, cuenta: null, rol: null });
   const [modalAssignAdmin, setModalAssignAdmin] = useState({ open: false, cuenta: null });
   const [modalRevoke, setModalRevoke] = useState({ open: false, cuenta: null, rol: null });
-  const [modalDelete, setModalDelete] = useState({ open: false, cuenta: null });
+  const [modalBloquear, setModalBloquear] = useState({ open: false, cuenta: null });
 
   const [toast, setToast] = useState({ msg: '', kind: 'success' });
 
@@ -84,8 +84,8 @@ function UsuariosView() {
     setModalRevoke({ open: true, cuenta, rol });
   };
 
-  const handleDelete = (cuenta) => {
-    setModalDelete({ open: true, cuenta });
+  const handleBloquear = (cuenta) => {
+    setModalBloquear({ open: true, cuenta });
   };
 
   const submitAssign = async (payload) => {
@@ -106,16 +106,17 @@ function UsuariosView() {
     load();
   };
 
-  const submitDelete = async (payload) => {
-    await eliminarCuenta(payload, getToken());
-    showSuccess('Cuenta eliminada.');
+  const submitBloquear = async (payload) => {
+    await bloquearCuenta(payload, getToken());
+    showSuccess('Cuenta bloqueada. Su historial se conserva.');
     load();
   };
 
   return (
     <div className="view-stack">
       <p className="page-subtitle" style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'rgba(255,255,255,0.45)', marginBottom: 28 }}>
-        Gestiona cuentas, roles y permisos de delegados, árbitros y administradores.
+        Gestiona cuentas, roles y permisos de delegados, árbitros y administradores. Busca a una persona por
+        nombre, correo o documento y bloquea su cuenta si hace falta: su historial se conserva.
       </p>
 
       <div className="usuarios-toolbar">
@@ -127,7 +128,8 @@ function UsuariosView() {
           <input
             className="usuarios-search-input"
             type="text"
-            placeholder="Buscar por nombre, correo o cédula..."
+            placeholder="Buscar por nombre, correo o documento..."
+            aria-label="Buscar cuentas por nombre, correo o documento"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -169,7 +171,7 @@ function UsuariosView() {
         onAssign={handleAssign}
         onAssignAdmin={handleAssignAdmin}
         onRevoke={handleRevoke}
-        onDelete={handleDelete}
+        onBloquear={handleBloquear}
       />
 
       <InvitarUsuarioModal
@@ -197,11 +199,11 @@ function UsuariosView() {
         onClose={() => setModalRevoke({ open: false, cuenta: null, rol: null })}
         onSubmit={submitRevoke}
       />
-      <DeleteUserModal
-        open={modalDelete.open}
-        cuenta={modalDelete.cuenta}
-        onClose={() => setModalDelete({ open: false, cuenta: null })}
-        onSubmit={submitDelete}
+      <BloquearCuentaModal
+        open={modalBloquear.open}
+        cuenta={modalBloquear.cuenta}
+        onClose={() => setModalBloquear({ open: false, cuenta: null })}
+        onSubmit={submitBloquear}
       />
 
       <Toast message={toast.msg} kind={toast.kind} onClose={() => setToast({ msg: '', kind: 'success' })} />

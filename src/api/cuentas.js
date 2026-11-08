@@ -12,30 +12,34 @@ export function listarCuentas({ q, rol, page = 0, size = 8 } = {}, token) {
   });
 }
 
-export function asignarRol({ cedula, rol, motivo }, token) {
+export function asignarRol({ cuentaId, rol, motivo }, token) {
   return requestJson('/api/admin/roles/asignar', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ cedula, rol, motivo }),
+    body: JSON.stringify({ cuentaId, rol, motivo }),
   });
 }
 
-export function revocarRol({ cedula, rol, motivo }, token) {
+export function revocarRol({ cuentaId, rol, motivo }, token) {
   return requestJson('/api/admin/roles/revocar', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ cedula, rol, motivo }),
+    body: JSON.stringify({ cuentaId, rol, motivo }),
   });
 }
 
-export function eliminarCuenta({ cedula, motivo }, token) {
-  return requestJson(`/api/admin/roles/cuenta/${encodeURIComponent(cedula)}`, {
+/**
+ * Bloquea la cuenta (spec 0018, W3): la persona no puede entrar ni unirse a un plantel, se le
+ * quitan los roles y se conserva su historial. El backend todavía no tiene cómo desbloquear.
+ */
+export function bloquearCuenta({ cuentaId, motivo }, token) {
+  return requestJson(`/api/admin/roles/cuenta/${encodeURIComponent(cuentaId)}`, {
     method: 'DELETE',
     headers: {
       Authorization: `Bearer ${token}`,
