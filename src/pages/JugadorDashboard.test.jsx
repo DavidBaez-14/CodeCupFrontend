@@ -142,7 +142,7 @@ describe('JugadorDashboard sin modal de perfil (spec 0020)', () => {
 
 // Spec 0027, criterios 15 y 16: el documento sale de /me (el perfil ya no lo trae) y se avisa del vínculo pendiente.
 describe('JugadorDashboard por persona (spec 0027)', () => {
-  const AVISO = /Tu documento ya estaba en el plantel de un equipo/;
+  const AVISO = /Falta que el delegado del equipo o un admin confirme tu historial/;
 
   beforeEach(() => {
     vi.clearAllMocks();

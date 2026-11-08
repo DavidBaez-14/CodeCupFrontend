@@ -230,11 +230,12 @@ function JugadorDashboard() {
       </header>
 
       <section className="role-content jugador-content">
-        {/* Spec 0023 (D1): quien se registra con el documento de un miembro sin cuenta espera la aprobación. */}
+        {/* Spec 0023: hay un vínculo por aprobar, porque se registró con el documento de un miembro sin
+            cuenta (D1) o porque reclamó a alguien anotado solo con el nombre (D3). El texto sirve para los dos. */}
         {cuenta?.vinculoPendiente?.estado === 'PENDIENTE' && (
           <p className="banner banner-info" role="status" style={{ marginBottom: 16 }}>
-            Tu documento ya estaba en el plantel de un equipo. Cuando el delegado o un admin lo confirme,
-            verás ese historial en tu perfil.
+            Falta que el delegado del equipo o un admin confirme tu historial. Cuando lo haga, verás en tu
+            perfil los partidos que jugaste antes de tener cuenta.
           </p>
         )}
 
