@@ -1,0 +1,15 @@
+{
+  "id": "7cbf1204-40db-46b4-a17d-3fc96cc22169",
+  "fecha": "2026-11-03T16:00:00",
+  "estado": "FINALIZADO",
+  "localEquipoTorneoId": "b229c34f-c24a-4839-80f6-1d234f112513",
+  "localNombre": "Halcones FC",
+  "visitanteEquipoTorneoId": "d7d06107-6d6f-49c9-8a1b-c88257628c0f",
+  "visitanteNombre": "Tiburones FC",
+  "golesLocal": 1,
+  "golesVisitante": 0,
+  "fase": "GRUPOS",
+  "jornada": 1,
+  "grupo": null,
+  "torneoId": "23f52b9d-17c3-4dfa-a88c-957f57ce2478"
+}

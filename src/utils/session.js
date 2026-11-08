@@ -2,18 +2,23 @@ const TOKEN_KEY = 'codecup_token';
 const ROL_KEY = 'codecup_rol';
 const NOMBRE_KEY = 'codecup_nombre';
 const EMAIL_KEY = 'codecup_email';
-const CEDULA_KEY = 'codecup_cedula';
+const PERSONA_KEY = 'codecup_persona_id';
+const CUENTA_KEY = 'codecup_cuenta_id';
 const ROLES_KEY = 'codecup_roles';
 const LOGIN_ROLE_KEY = 'codecup_login_role';
 const INVITACION_KEY = 'codecup_invitacion';
+// La web anterior a la spec 0027 guardaba aquí el documento. Ya no se usa: se borra al guardar o cerrar la sesión.
+const CLAVE_VIEJA_DOCUMENTO = 'codecup_cedula';
 
-export function setSession({ token, rol, nombre, email, cedula, roles }) {
+export function setSession({ token, rol, nombre, email, personaId, cuentaId, roles }) {
   if (token) localStorage.setItem(TOKEN_KEY, token);
   if (rol) localStorage.setItem(ROL_KEY, rol);
   if (nombre !== undefined) localStorage.setItem(NOMBRE_KEY, nombre || '');
   if (email !== undefined) localStorage.setItem(EMAIL_KEY, email || '');
-  if (cedula !== undefined) localStorage.setItem(CEDULA_KEY, cedula || '');
+  if (personaId !== undefined) localStorage.setItem(PERSONA_KEY, personaId || '');
+  if (cuentaId !== undefined) localStorage.setItem(CUENTA_KEY, cuentaId || '');
   if (roles !== undefined) localStorage.setItem(ROLES_KEY, JSON.stringify(roles || []));
+  localStorage.removeItem(CLAVE_VIEJA_DOCUMENTO);
 }
 
 export function clearSession() {
@@ -21,8 +26,10 @@ export function clearSession() {
   localStorage.removeItem(ROL_KEY);
   localStorage.removeItem(NOMBRE_KEY);
   localStorage.removeItem(EMAIL_KEY);
-  localStorage.removeItem(CEDULA_KEY);
+  localStorage.removeItem(PERSONA_KEY);
+  localStorage.removeItem(CUENTA_KEY);
   localStorage.removeItem(ROLES_KEY);
+  localStorage.removeItem(CLAVE_VIEJA_DOCUMENTO);
 }
 
 /** Access token vigente de Supabase (lo mantiene lib/supabase con onAuthStateChange). */
@@ -36,7 +43,8 @@ export function guardarSesionDesdeMe(me, rol) {
     rol: rol || undefined,
     nombre: me?.nombre,
     email: me?.correo,
-    cedula: me?.cedula,
+    personaId: me?.personaId,
+    cuentaId: me?.cuentaId,
     roles: me?.roles || [],
   });
 }
@@ -57,8 +65,14 @@ export function getEmail() {
   return localStorage.getItem(EMAIL_KEY);
 }
 
-export function getCedula() {
-  return localStorage.getItem(CEDULA_KEY);
+/** Persona de quien inició sesión (identidad.personas.id). */
+export function getPersonaId() {
+  return localStorage.getItem(PERSONA_KEY);
+}
+
+/** Cuenta de quien inició sesión (identidad.cuentas.id). */
+export function getCuentaId() {
+  return localStorage.getItem(CUENTA_KEY);
 }
 
 export function getRoles() {

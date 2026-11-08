@@ -40,7 +40,6 @@ const PENDIENTES = [
   'src/pages/arbitro/AlineacionTab.jsx',
   'src/pages/delegado/MiEquipoTab.jsx',
   'src/pages/delegado/SolicitudesTab.jsx',
-  'src/utils/session.js',
 ];
 
 /** Código de src/ (sin tests ni helpers de test) que todavía nombra la cédula o el padrón. */

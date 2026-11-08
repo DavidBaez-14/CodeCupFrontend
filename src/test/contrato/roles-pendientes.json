@@ -1,0 +1,13 @@
+[
+  {
+    "id": "a5000000-0000-4000-8000-000000000001",
+    "cuentaId": "27178bec-d072-4ed4-baa3-d6548797f8dc",
+    "numeroDocumento": "9000000322",
+    "rol": "DELEGADO",
+    "estado": "PENDIENTE",
+    "fechaSolicitud": "2026-11-08T08:30:00",
+    "nombre": "Valeria Ibáñez",
+    "correo": "jugador22@prueba.local",
+    "motivoSolicitud": "Quiero inscribir a mi equipo"
+  }
+]

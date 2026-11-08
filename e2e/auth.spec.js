@@ -46,7 +46,8 @@ function sesion(email) {
 const CORREO = 'ana@correo.test';
 const meJugador = {
   cuentaId: 'c-1', personaId: 'p-1', nombre: 'Ana María Pérez', nombres: 'Ana María', apellidos: 'Pérez',
-  correo: CORREO, cedula: '1090123', estado: 'ACTIVA', roles: ['JUGADOR'], rolesPendientes: [],
+  correo: CORREO, tipoDocumento: 'CC', numeroDocumento: '1090123', estado: 'ACTIVA', roles: ['JUGADOR'], rolesPendientes: [],
+  vinculoPendiente: null,
 };
 
 /**

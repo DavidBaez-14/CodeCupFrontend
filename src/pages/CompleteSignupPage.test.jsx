@@ -12,7 +12,7 @@ import { errorApi, renderEnRuta } from '../test/rutas';
 
 const ubicacion = () => screen.getByTestId('ubicacion');
 const respuestaMe = (roles, rolesPendientes = []) => ({
-  roles, rolesPendientes, nombre: 'Ana María Pérez', correo: 'ana@correo.co', cedula: '1090123',
+  roles, rolesPendientes, nombre: 'Ana María Pérez', correo: 'ana@correo.co', personaId: 'p-1', numeroDocumento: '1090123',
 });
 
 async function completar({ tipoCuenta, motivo } = {}) {

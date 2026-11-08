@@ -1,0 +1,122 @@
+[
+  {
+    "id": "ff89e9d8-18a9-4651-8d64-3a66056b9519",
+    "personaId": "644247b6-4f0b-4be7-bf4f-7107844760cc",
+    "numeroDocumento": "9000000201",
+    "jugadorNombre": "Andrés Gómez",
+    "equipoTorneoId": "b229c34f-c24a-4839-80f6-1d234f112513",
+    "equipoNombre": "Halcones FC",
+    "goles": 0,
+    "jugo": true
+  },
+  {
+    "id": "b83a5b10-daac-4456-9733-2cfd3b21bda8",
+    "personaId": "66186c27-e4f9-43cb-8633-5b8effd8ee4d",
+    "numeroDocumento": "9000000202",
+    "jugadorNombre": "Valentina Ruiz",
+    "equipoTorneoId": "d7d06107-6d6f-49c9-8a1b-c88257628c0f",
+    "equipoNombre": "Tiburones FC",
+    "goles": 0,
+    "jugo": true
+  },
+  {
+    "id": "e41332a8-86b0-44e5-90ef-4e5d0a0f1415",
+    "personaId": "7edf4b7a-871e-4350-9433-28e42d907390",
+    "numeroDocumento": "9000000301",
+    "jugadorNombre": "Juan Castro",
+    "equipoTorneoId": "b229c34f-c24a-4839-80f6-1d234f112513",
+    "equipoNombre": "Halcones FC",
+    "goles": 1,
+    "jugo": true
+  },
+  {
+    "id": "5e037ed2-eab7-4f02-8113-acec701950a6",
+    "personaId": "bf46833e-f754-4550-bff5-a3264ce93c90",
+    "numeroDocumento": "9000000302",
+    "jugadorNombre": "Sofía Moreno",
+    "equipoTorneoId": "b229c34f-c24a-4839-80f6-1d234f112513",
+    "equipoNombre": "Halcones FC",
+    "goles": 0,
+    "jugo": true
+  },
+  {
+    "id": "4f5aed7b-10ca-4936-8292-da639107eb73",
+    "personaId": "03b382e0-5576-491b-8217-e5e571e84c21",
+    "numeroDocumento": "9000000303",
+    "jugadorNombre": "Mateo Jiménez",
+    "equipoTorneoId": "b229c34f-c24a-4839-80f6-1d234f112513",
+    "equipoNombre": "Halcones FC",
+    "goles": 0,
+    "jugo": true
+  },
+  {
+    "id": "57100174-6b77-410f-9fa2-787302e8b75f",
+    "personaId": "3a8c187e-155d-4f28-ad3a-29ef844f555e",
+    "numeroDocumento": "9000000304",
+    "jugadorNombre": "Isabella Rincón",
+    "equipoTorneoId": "b229c34f-c24a-4839-80f6-1d234f112513",
+    "equipoNombre": "Halcones FC",
+    "goles": 0,
+    "jugo": true
+  },
+  {
+    "id": "8a7bb705-895a-4390-b1f8-0d763bd5d685",
+    "personaId": "b7b8641f-82d1-451d-8f53-3ce428488571",
+    "numeroDocumento": "9000000305",
+    "jugadorNombre": "Sebastián Pardo",
+    "equipoTorneoId": "b229c34f-c24a-4839-80f6-1d234f112513",
+    "equipoNombre": "Halcones FC",
+    "goles": 0,
+    "jugo": true
+  },
+  {
+    "id": "2fb05803-c69a-4bb2-ab0b-373c664568b4",
+    "personaId": "56646ebc-93ca-4e7e-9209-53e458a8391c",
+    "numeroDocumento": "9000000306",
+    "jugadorNombre": "Mariana Suárez",
+    "equipoTorneoId": "d7d06107-6d6f-49c9-8a1b-c88257628c0f",
+    "equipoNombre": "Tiburones FC",
+    "goles": 0,
+    "jugo": true
+  },
+  {
+    "id": "dab979dc-9fef-4842-8ff5-2405b69e59d3",
+    "personaId": "85ccf6d7-3b59-4a0c-9d24-8f3751224c92",
+    "numeroDocumento": "9000000307",
+    "jugadorNombre": "Nicolás Ortiz",
+    "equipoTorneoId": "d7d06107-6d6f-49c9-8a1b-c88257628c0f",
+    "equipoNombre": "Tiburones FC",
+    "goles": 0,
+    "jugo": true
+  },
+  {
+    "id": "7e4a4b3a-723e-4065-ab40-babde69319e9",
+    "personaId": "f212be38-012d-4de4-a0b4-bb3b92765f16",
+    "numeroDocumento": "9000000308",
+    "jugadorNombre": "Gabriela Duarte",
+    "equipoTorneoId": "d7d06107-6d6f-49c9-8a1b-c88257628c0f",
+    "equipoNombre": "Tiburones FC",
+    "goles": 0,
+    "jugo": true
+  },
+  {
+    "id": "4048dfb4-d1b6-47a3-9faf-c621f8241408",
+    "personaId": "9979ef8d-26bf-43ca-b3a9-4d6192f731e8",
+    "numeroDocumento": "9000000309",
+    "jugadorNombre": "Daniel Peña",
+    "equipoTorneoId": "d7d06107-6d6f-49c9-8a1b-c88257628c0f",
+    "equipoNombre": "Tiburones FC",
+    "goles": 0,
+    "jugo": true
+  },
+  {
+    "id": "83668a39-b337-4c96-8a24-e100928acb20",
+    "personaId": "1a6ba755-1879-4f04-b600-6899b80b5bd6",
+    "numeroDocumento": "9000000310",
+    "jugadorNombre": "Paula Silva",
+    "equipoTorneoId": "d7d06107-6d6f-49c9-8a1b-c88257628c0f",
+    "equipoNombre": "Tiburones FC",
+    "goles": 0,
+    "jugo": true
+  }
+]

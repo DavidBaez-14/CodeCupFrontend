@@ -1,0 +1,44 @@
+{
+  "personaId": "7edf4b7a-871e-4350-9433-28e42d907390",
+  "nombre": "Juan Castro",
+  "alturaCm": 183,
+  "piernaHabil": "IZQUIERDA",
+  "posicion": "MEDIOCAMPISTA",
+  "equipos": [
+    {
+      "id": "4b4a374c-c3e0-4b29-ae48-590d864ecc11",
+      "nombre": "Halcones FC",
+      "torneo": "Copa Prueba 2026",
+      "desde": "2026-11-02",
+      "hasta": null
+    },
+    {
+      "id": "4b4a374c-c3e0-4b29-ae48-590d864ecc11",
+      "nombre": "Halcones FC",
+      "torneo": "Liga Relámpago (prueba)",
+      "desde": "2026-11-02",
+      "hasta": null
+    }
+  ],
+  "resumen": {
+    "partidosJugados": 1,
+    "goles": 1,
+    "tarjetas": {
+      "amarillas": 0,
+      "azules": 0,
+      "rojas": 0
+    },
+    "titulos": 0
+  },
+  "titulos": [],
+  "partidos": [
+    {
+      "id": "7cbf1204-40db-46b4-a17d-3fc96cc22169",
+      "fecha": "2026-11-03T16:00:00",
+      "equipo": "Halcones FC",
+      "rival": "Tiburones FC",
+      "goles": 1,
+      "tarjetas": []
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "5b2731e6-19ac-4410-92ad-0311260bf0b7",
+    "orden": 1,
+    "personaId": "7edf4b7a-871e-4350-9433-28e42d907390",
+    "jugadorNombre": "Juan Castro",
+    "equipoTorneoId": "b229c34f-c24a-4839-80f6-1d234f112513",
+    "equipoNombre": "Halcones FC",
+    "tipoEvento": "GOL",
+    "createdAt": "2026-11-02T13:56:30.081267"
+  },
+  {
+    "id": "943f5c54-b457-488e-b15e-80b67561eb86",
+    "orden": 2,
+    "personaId": "56646ebc-93ca-4e7e-9209-53e458a8391c",
+    "jugadorNombre": "Mariana Suárez",
+    "equipoTorneoId": "d7d06107-6d6f-49c9-8a1b-c88257628c0f",
+    "equipoNombre": "Tiburones FC",
+    "tipoEvento": "AMARILLA",
+    "createdAt": "2026-11-02T13:56:31.437619"
+  }
+]

@@ -26,7 +26,7 @@ test.describe('Pagos — flujo del delegado (móvil, red mockeada)', () => {
       localStorage.setItem('codecup_token', 'fake.jwt');
       localStorage.setItem('codecup_rol', 'DELEGADO');
       localStorage.setItem('codecup_nombre', 'Test Delegado');
-      localStorage.setItem('codecup_cedula', '12345');
+      localStorage.setItem('codecup_persona_id', 'p-delegado');
       localStorage.setItem('codecup_roles', JSON.stringify(['DELEGADO']));
     });
 

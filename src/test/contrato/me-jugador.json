@@ -1,0 +1,16 @@
+{
+  "cuentaId": "5274e34c-2540-41bf-8ba1-aca550aebde6",
+  "personaId": "7edf4b7a-871e-4350-9433-28e42d907390",
+  "nombres": "Juan",
+  "apellidos": "Castro",
+  "nombre": "Juan Castro",
+  "correo": "jugador01@prueba.local",
+  "tipoDocumento": "CC",
+  "numeroDocumento": "9000000301",
+  "estado": "ACTIVA",
+  "roles": [
+    "JUGADOR"
+  ],
+  "rolesPendientes": [],
+  "vinculoPendiente": null
+}

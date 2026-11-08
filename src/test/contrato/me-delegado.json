@@ -1,0 +1,17 @@
+{
+  "cuentaId": "f27d38ae-b37e-465e-a45a-e75d26c0ef93",
+  "personaId": "644247b6-4f0b-4be7-bf4f-7107844760cc",
+  "nombres": "Andrés",
+  "apellidos": "Gómez",
+  "nombre": "Andrés Gómez",
+  "correo": "delegado01@prueba.local",
+  "tipoDocumento": "CC",
+  "numeroDocumento": "9000000201",
+  "estado": "ACTIVA",
+  "roles": [
+    "DELEGADO",
+    "JUGADOR"
+  ],
+  "rolesPendientes": [],
+  "vinculoPendiente": null
+}

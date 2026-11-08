@@ -1,0 +1,44 @@
+[
+  {
+    "id": "a1000000-0000-4000-8000-000000000001",
+    "premioId": "a2000000-0000-4000-8000-000000000001",
+    "codigoCatalogo": "CAMPEON",
+    "nombreCatalogo": "Campeón",
+    "titulo": null,
+    "descripcion": null,
+    "monto": 500000,
+    "ganadorPersonaId": null,
+    "ganadorNombre": null,
+    "ganadorEquipoTorneoId": "b229c34f-c24a-4839-80f6-1d234f112513",
+    "ganadorEquipoNombre": "Halcones FC",
+    "asignadoEn": "2026-11-08T10:00:00"
+  },
+  {
+    "id": "a1000000-0000-4000-8000-000000000002",
+    "premioId": "a2000000-0000-4000-8000-000000000002",
+    "codigoCatalogo": "MVP",
+    "nombreCatalogo": "Jugador más valioso",
+    "titulo": null,
+    "descripcion": null,
+    "monto": 100000,
+    "ganadorPersonaId": "7edf4b7a-871e-4350-9433-28e42d907390",
+    "ganadorNombre": "Juan Castro",
+    "ganadorEquipoTorneoId": null,
+    "ganadorEquipoNombre": null,
+    "asignadoEn": "2026-11-08T10:05:00"
+  },
+  {
+    "id": "a1000000-0000-4000-8000-000000000003",
+    "premioId": "a2000000-0000-4000-8000-000000000003",
+    "codigoCatalogo": "OTRO",
+    "nombreCatalogo": "Otro",
+    "titulo": "Juego limpio",
+    "descripcion": "Premio al juego limpio",
+    "monto": 50000,
+    "ganadorPersonaId": null,
+    "ganadorNombre": null,
+    "ganadorEquipoTorneoId": null,
+    "ganadorEquipoNombre": null,
+    "asignadoEn": null
+  }
+]

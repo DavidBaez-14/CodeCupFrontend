@@ -16,7 +16,7 @@ describe('PendingApprovalPage (spec 0019)', () => {
     vi.clearAllMocks();
     localStorage.clear();
     me.mockResolvedValue({
-      roles: ['JUGADOR'], rolesPendientes: ['DELEGADO'], nombre: 'Ana Pérez', correo: 'ana@correo.co', cedula: '1',
+      roles: ['JUGADOR'], rolesPendientes: ['DELEGADO'], nombre: 'Ana Pérez', correo: 'ana@correo.co', personaId: 'p-1', numeroDocumento: '1',
     });
   });
 

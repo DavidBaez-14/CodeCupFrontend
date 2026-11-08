@@ -11,7 +11,7 @@ import { me, solicitarRol } from '../api/auth';
 import { errorApi } from '../test/rutas';
 
 const datosMe = (roles, rolesPendientes = []) => ({
-  roles, rolesPendientes, nombre: 'Ana Pérez', correo: 'ana@correo.co', cedula: '1090123',
+  roles, rolesPendientes, nombre: 'Ana Pérez', correo: 'ana@correo.co', personaId: 'p-1', numeroDocumento: '1090123',
 });
 
 function renderPanel(componente) {

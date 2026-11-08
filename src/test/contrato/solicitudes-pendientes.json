@@ -1,0 +1,21 @@
+[
+  {
+    "id": "a3000000-0000-4000-8000-000000000001",
+    "personaId": "a4000000-0000-4000-8000-000000000022",
+    "numeroDocumento": "9000000322",
+    "nombre": "Valeria Ibáñez",
+    "correo": "jugador22@prueba.local",
+    "alturaCm": null,
+    "piernaHabil": null,
+    "posicion": null,
+    "equipoTorneoId": "2c1f63d4-5b6a-4003-b9a0-82e8515080f2",
+    "equipoId": "4b4a374c-c3e0-4b29-ae48-590d864ecc11",
+    "equipoNombre": "Halcones FC",
+    "torneoId": "c8362890-363e-4047-994f-cec5c5785c94",
+    "torneoNombre": "Copa Prueba 2026",
+    "estado": "PENDIENTE",
+    "fechaSolicitud": "2026-11-08T09:00:00",
+    "fechaResolucion": null,
+    "motivoRechazo": null
+  }
+]

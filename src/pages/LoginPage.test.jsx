@@ -17,7 +17,10 @@ import { errorApi, errorAuth, renderEnRuta } from '../test/rutas';
 const BLOQUEADA = 'Tu cuenta está bloqueada. Si crees que es un error, escribe a un administrador.';
 
 function datosMe(roles, rolesPendientes = []) {
-  return { roles, rolesPendientes, nombre: 'Ana Pérez', correo: 'ana@correo.co', cedula: '1090123' };
+  return {
+    roles, rolesPendientes, nombre: 'Ana Pérez', correo: 'ana@correo.co',
+    cuentaId: 'c-1', personaId: 'p-1', tipoDocumento: 'CC', numeroDocumento: '1090123',
+  };
 }
 
 async function entrar({ rol } = {}) {
@@ -48,7 +51,10 @@ describe('LoginPage — Supabase (spec 0019)', () => {
     expect(entrarConContrasena).toHaveBeenCalledWith('ana@correo.co', 'secreta123');
     expect(localStorage.getItem('codecup_rol')).toBe('DELEGADO');
     expect(JSON.parse(localStorage.getItem('codecup_roles'))).toEqual(['JUGADOR', 'DELEGADO']);
-    expect(localStorage.getItem('codecup_cedula')).toBe('1090123');
+    // Spec 0027: la sesión guarda la persona y la cuenta, no el documento.
+    expect(localStorage.getItem('codecup_persona_id')).toBe('p-1');
+    expect(localStorage.getItem('codecup_cuenta_id')).toBe('c-1');
+    expect(localStorage.getItem('codecup_cedula')).toBeNull();
   });
 
   it('adminSinRol_noEntra', async () => {

@@ -1,0 +1,193 @@
+{
+  "content": [
+    {
+      "id": "9960b02f-b6ba-48d7-8da9-771ca2098e4f",
+      "numeroDocumento": "9000000323",
+      "nombre": "Esteban León",
+      "correo": "jugador23@prueba.local",
+      "estado": "ACTIVA",
+      "fechaCreacion": "2026-11-02T13:47:39.00697",
+      "roles": [
+        {
+          "id": "66259a14-52b0-40c7-a2ee-6c430d102e62",
+          "rol": "JUGADOR",
+          "estado": "APROBADO",
+          "fechaSolicitud": "2026-11-02T13:47:39.105905",
+          "fechaResolucion": "2026-11-02T13:47:39.105905"
+        },
+        {
+          "id": "9fc89ffe-52e3-47a2-b01f-83fa4abc79bd",
+          "rol": "DELEGADO",
+          "estado": "APROBADO",
+          "fechaSolicitud": "2026-11-02T16:03:15.38866",
+          "fechaResolucion": "2026-11-02T16:09:18.02325"
+        }
+      ]
+    },
+    {
+      "id": "27178bec-d072-4ed4-baa3-d6548797f8dc",
+      "numeroDocumento": "9000000322",
+      "nombre": "Valeria Ibáñez",
+      "correo": "jugador22@prueba.local",
+      "estado": "ACTIVA",
+      "fechaCreacion": "2026-11-02T13:47:38.010696",
+      "roles": [
+        {
+          "id": "184256f3-b6de-41ca-84e7-b337a327c60b",
+          "rol": "JUGADOR",
+          "estado": "APROBADO",
+          "fechaSolicitud": "2026-11-02T13:47:38.117314",
+          "fechaResolucion": "2026-11-02T13:47:38.117314"
+        }
+      ]
+    },
+    {
+      "id": "29d4dc3f-e465-4874-bcc8-6e9d7b624765",
+      "numeroDocumento": "9000000321",
+      "nombre": "Miguel Fajardo",
+      "correo": "jugador21@prueba.local",
+      "estado": "ACTIVA",
+      "fechaCreacion": "2026-11-02T13:47:36.746102",
+      "roles": [
+        {
+          "id": "d521ca46-1cf7-46cc-9163-595202c71e08",
+          "rol": "JUGADOR",
+          "estado": "APROBADO",
+          "fechaSolicitud": "2026-11-02T13:47:36.839825",
+          "fechaResolucion": "2026-11-02T13:47:36.839825"
+        },
+        {
+          "id": "54b06cc5-3ce1-4d35-926f-e13163beddb7",
+          "rol": "DELEGADO",
+          "estado": "APROBADO",
+          "fechaSolicitud": "2026-11-02T13:56:39.616773",
+          "fechaResolucion": "2026-11-02T13:56:39.616773"
+        }
+      ]
+    },
+    {
+      "id": "3ccf720b-5157-4b1c-b14b-ac642f55bc16",
+      "numeroDocumento": "9000000320",
+      "nombre": "Lucía Becerra",
+      "correo": "jugador20@prueba.local",
+      "estado": "ACTIVA",
+      "fechaCreacion": "2026-11-02T13:47:35.382277",
+      "roles": [
+        {
+          "id": "ee9e5362-ae40-4cf5-912d-330bc0351aa4",
+          "rol": "JUGADOR",
+          "estado": "APROBADO",
+          "fechaSolicitud": "2026-11-02T13:47:35.48058",
+          "fechaResolucion": "2026-11-02T13:47:35.48058"
+        },
+        {
+          "id": "6bdd96e5-024b-4910-9257-fc826270c36d",
+          "rol": "ARBITRO",
+          "estado": "APROBADO",
+          "fechaSolicitud": "2026-11-02T13:54:06.128088",
+          "fechaResolucion": "2026-11-02T13:54:06.128088"
+        }
+      ]
+    },
+    {
+      "id": "fecff482-ae87-4d6f-a6e3-1c33a578cc81",
+      "numeroDocumento": "9000000319",
+      "nombre": "Samuel Quintero",
+      "correo": "jugador19@prueba.local",
+      "estado": "ACTIVA",
+      "fechaCreacion": "2026-11-02T13:47:34.100134",
+      "roles": [
+        {
+          "id": "e9e1f103-2471-4cee-bb77-069f2da816c4",
+          "rol": "JUGADOR",
+          "estado": "APROBADO",
+          "fechaSolicitud": "2026-11-02T13:47:34.198588",
+          "fechaResolucion": "2026-11-02T13:47:34.198588"
+        },
+        {
+          "id": "6b82c616-fc34-43fe-9230-1cd2d3ea24ad",
+          "rol": "DELEGADO",
+          "estado": "APROBADO",
+          "fechaSolicitud": "2026-11-02T13:56:00.538869",
+          "fechaResolucion": "2026-11-02T13:56:01.712344"
+        }
+      ]
+    },
+    {
+      "id": "1968cb1e-76e4-4f86-b314-61897a166dda",
+      "numeroDocumento": "9000000318",
+      "nombre": "Daniela Navarro",
+      "correo": "jugador18@prueba.local",
+      "estado": "ACTIVA",
+      "fechaCreacion": "2026-11-02T13:47:32.833104",
+      "roles": [
+        {
+          "id": "c9e7d62a-a8a7-457e-9a98-89303b40d0ab",
+          "rol": "JUGADOR",
+          "estado": "APROBADO",
+          "fechaSolicitud": "2026-11-02T13:47:32.931083",
+          "fechaResolucion": "2026-11-02T13:47:32.931083"
+        }
+      ]
+    },
+    {
+      "id": "73fcee45-91d3-48cf-8df1-94b4937e5239",
+      "numeroDocumento": "9000000317",
+      "nombre": "Tomás Cruz",
+      "correo": "jugador17@prueba.local",
+      "estado": "ACTIVA",
+      "fechaCreacion": "2026-11-02T13:47:31.545037",
+      "roles": [
+        {
+          "id": "726c1e5a-8e40-4c9e-aab2-d1ab565e897a",
+          "rol": "JUGADOR",
+          "estado": "APROBADO",
+          "fechaSolicitud": "2026-11-02T13:47:31.64226",
+          "fechaResolucion": "2026-11-02T13:47:31.64226"
+        }
+      ]
+    },
+    {
+      "id": "d9aa51f6-de57-4cdc-9cac-5bdca2cb01a7",
+      "numeroDocumento": "9000000316",
+      "nombre": "Juliana Acosta",
+      "correo": "jugador16@prueba.local",
+      "estado": "ACTIVA",
+      "fechaCreacion": "2026-11-02T13:47:30.111992",
+      "roles": [
+        {
+          "id": "7544b9ff-eb8e-4b1b-a645-81fa65e83f58",
+          "rol": "JUGADOR",
+          "estado": "APROBADO",
+          "fechaSolicitud": "2026-11-02T13:47:30.211019",
+          "fechaResolucion": "2026-11-02T13:47:30.211019"
+        }
+      ]
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 8,
+    "sort": {
+      "empty": false,
+      "sorted": true,
+      "unsorted": false
+    },
+    "offset": 0,
+    "paged": true,
+    "unpaged": false
+  },
+  "last": false,
+  "totalElements": 30,
+  "totalPages": 4,
+  "first": true,
+  "size": 8,
+  "number": 0,
+  "sort": {
+    "empty": false,
+    "sorted": true,
+    "unsorted": false
+  },
+  "numberOfElements": 8,
+  "empty": false
+}
