@@ -1,3 +1,11 @@
+> **Histórico (AuthCodeCup + Appwrite).** Este registro describe el backend viejo y ya no es el contrato
+> vigente. Con BackendCodeCup y la identidad por persona (specs 0022 y 0027):
+> - asignar y revocar rol reciben `{ cuentaId, rol, motivo }`;
+> - "eliminar cuenta" pasó a **bloquear**: `DELETE /api/admin/roles/cuenta/{cuentaId}` con `{ motivo }`, que deja
+>   la cuenta `BLOQUEADA`, le quita los roles y conserva su historial;
+> - los listados traen `numeroDocumento` (no `cedula`) y ya no se crean cuentas con contraseña desde el panel
+>   (ahora es por invitación, spec 0019).
+
 Update Todos
 
 Crear DTOs nuevos (AsignarRolRequest, RevocarRolRequest, CrearCuentaRequest, CrearCuentaResponse, CuentaAdminDTO, RolEstadoDTO)
