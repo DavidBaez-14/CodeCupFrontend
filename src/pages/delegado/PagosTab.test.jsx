@@ -109,6 +109,8 @@ describe('PagosTab — selector de torneo', () => {
 
     const select = await screen.findByLabelText(/torneo/i);
     expect(within(select).getAllByRole('option')).toHaveLength(1);
-    expect(screen.getByRole('button', { name: /reemplazar/i })).toBeInTheDocument();
+    // El selector aparece con las inscripciones; el botón cambia a "Reemplazar" cuando llegan
+    // los comprobantes, que es otra petición. Hay que esperarlo: con la suite completa a veces llega después.
+    expect(await screen.findByRole('button', { name: /reemplazar/i })).toBeInTheDocument();
   });
 });
