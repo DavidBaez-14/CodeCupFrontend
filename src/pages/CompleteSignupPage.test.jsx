@@ -73,7 +73,7 @@ describe('CompleteSignupPage (spec 0019)', () => {
 
     await completar();
 
-    expect(await screen.findByText('Ese documento ya está registrado.')).toBeInTheDocument();
+    expect(await screen.findByText('Ya existe una cuenta con este documento. Entra con la forma que usaste la primera vez (Google o tu correo y contraseña).')).toBeInTheDocument();
     expect(ubicacion()).toHaveTextContent('/complete-signup');
   });
 

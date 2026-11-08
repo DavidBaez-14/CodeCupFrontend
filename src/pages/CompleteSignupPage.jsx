@@ -168,7 +168,7 @@ function CompleteSignupPage() {
       if (mensaje) setError(mensaje);
     } catch (err) {
       const code = err?.body?.code;
-      if (code === 'DOCUMENTO_REGISTRADO') setError('Ese documento ya está registrado.');
+      if (code === 'DOCUMENTO_REGISTRADO') setError('Ya existe una cuenta con este documento. Entra con la forma que usaste la primera vez (Google o tu correo y contraseña).');
       else setError(err?.message || 'No fue posible completar el registro.');
     } finally {
       setLoading(false);
